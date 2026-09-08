@@ -11,62 +11,58 @@ import {
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Importation correcte pour Next.js 13+
+import Link from 'next/link';
 import { useState } from 'react';
 
-// Added a trigger prop to accept custom triggers
+/**
+ * 첫 진입 안내 모달.
+ *
+ * 원본은 영문에 자리표시자가 그대로 남아 있었다 — 제목이
+ * "Welcome to AI Portfolio", 소제목이 `What's ????` 와 `Why ???` 였다.
+ * "Contact me" 링크는 영문 질의를 챗으로 보내는 것이었는데, 문서 페이지가
+ * 생긴 뒤로는 여기서 바로 보내는 편이 낫다.
+ *
+ * Phase 5 에서 여기에 두 가지가 더 붙는다 —
+ *   · "다시 보지 않기" (localStorage, 접근 자체가 throw 할 수 있어 try/catch)
+ *   · reader 계정 안내 (관리자가 발급한 id/password 가 있는지 묻는 자리)
+ */
 interface WelcomeModalProps {
   trigger?: React.ReactNode;
 }
 
 export default function WelcomeModal({ trigger }: WelcomeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const router = useRouter(); // Initialisation du router avec useRouter
 
-  // Default trigger is the logo
   const defaultTrigger = (
     <Button
       variant="ghost"
       className="h-auto w-auto cursor-pointer rounded-2xl bg-white/30 p-3 shadow-lg backdrop-blur-lg hover:bg-white/60 focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
       onClick={() => setIsOpen(true)}
+      aria-label="jangmini 소개 열기"
     >
       <BrandMark className="w-6 md:w-8" />
-      <span className="sr-only">jangmini 소개</span>
     </Button>
   );
 
-  // Fonction qui utilise window.location pour forcer un rechargement complet
-  const handleContactMe = () => {
-    setIsOpen(false);
-    // Forcer un rechargement complet de la page avec la requête
-    window.location.href = '/chat?query=How%20can%20I%20contact%20you%3F';
-  };
-
   return (
     <>
-      {/* Use custom trigger if provided, otherwise use default */}
-      {trigger ? (
-        <div onClick={() => setIsOpen(true)}>{trigger}</div>
-      ) : (
-        defaultTrigger
-      )}
+      {trigger ? <div onClick={() => setIsOpen(true)}>{trigger}</div> : defaultTrigger}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="bg-background z-52 max-h-[85vh] overflow-auto rounded-2xl border-none p-4 py-6 shadow-xl sm:max-w-[85vw] md:max-w-[80vw] lg:max-w-[1000px]">
+        <DialogContent className="bg-background z-52 max-h-[85vh] overflow-auto rounded-2xl border-none p-4 py-6 shadow-xl sm:max-w-[85vw] md:max-w-[80vw] lg:max-w-[720px]">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="flex h-full flex-col"
           >
-            {/* Header */}
-            <DialogHeader className="relative flex flex-row items-start justify-between px-8 pt-8 pb-6">
+            <DialogHeader className="relative flex flex-row items-start justify-between px-4 pt-4 pb-4 md:px-8 md:pt-8">
               <div>
-                <DialogTitle className="flex items-center gap-2 text-4xl font-bold tracking-tight">
-                  Welcome to AI Portfolio
+                <DialogTitle className="text-2xl font-bold tracking-tight md:text-3xl">
+                  장민의 포트폴리오입니다
                 </DialogTitle>
                 <DialogDescription className="mt-2 text-base">
-                  {/*My interactive AI portfolio experience*/}
+                  묻고 싶은 걸 물어보셔도 되고, 문서로 바로 보셔도 됩니다.
                 </DialogDescription>
               </div>
               <Button
@@ -75,65 +71,51 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
                 className="sticky top-0 right-0 cursor-pointer rounded-full bg-black p-2 text-white hover:bg-black/90 hover:text-white"
                 onClick={() => setIsOpen(false)}
               >
-                <X className="h-6 w-6" />
-                <span className="sr-only">Close</span>
+                <X className="h-5 w-5" />
+                <span className="sr-only">닫기</span>
               </Button>
             </DialogHeader>
 
-            {/* Content area */}
-            <div className="space-y-6 overflow-y-auto px-2 py-4 md:px-8">
-              <section className="bg-accent w-full space-y-8 rounded-2xl p-8">
-                {/* What section */}
-                <div className="space-y-3">
-                  <h3 className="text-primary flex items-center gap-2 text-xl font-semibold">
-                    What's ????
-                  </h3>
-                  <p className="text-accent-foreground text-base leading-relaxed">
-                    I'm so excited to present my{' '}
-                    <strong>brand new AI Portfolio.</strong>
-                    <br /> Whether you're a recruiter, a friend, family member,
-                    or just curious, feel free to ask anything you want!
+            <div className="space-y-4 overflow-y-auto px-2 py-2 md:px-8">
+              <section className="bg-accent w-full space-y-5 rounded-2xl p-5 md:p-7">
+                <div className="space-y-2">
+                  <h3 className="text-primary text-lg font-semibold">두 가지 방법으로 볼 수 있어요</h3>
+                  <p className="text-accent-foreground text-sm leading-relaxed">
+                    <strong>AI에게 묻기</strong> — 경력·프로젝트·기술을 대화로 찾아볼 수 있습니다.
+                    <br />
+                    <strong>문서로 보기</strong> — 훑어보거나 링크로 공유하기 좋습니다.
                   </p>
                 </div>
 
-                {/* Why section */}
-                <div className="space-y-3">
-                  <h3 className="text-primary flex items-center gap-2 text-xl font-semibold">
-                    Why ???
-                  </h3>
-                  <p className="text-accent-foreground text-base leading-relaxed">
-                    Traditional portfolios can be limiting. <br /> They can't
-                    adapt to every visitor's specific needs. <br /> My portfolio
-                    becomes{' '}
-                    <strong>
-                      exactly what you're interested in knowing about me and my
-                      work.
-                    </strong>
+                <div className="space-y-2">
+                  <h3 className="text-primary text-lg font-semibold">답변의 근거</h3>
+                  <p className="text-accent-foreground text-sm leading-relaxed">
+                    답변은 <strong>기록된 이력과 프로젝트 문서</strong>에서만 가져옵니다.
+                    기록에 없는 내용은 지어내지 않고 &quot;기록에 없다&quot;고 말합니다.
+                    급여·개인 연락처·재직 중 회사의 내부 정보는 답하지 않습니다.
                   </p>
                 </div>
               </section>
             </div>
 
-            {/* Footer */}
-            <div className="flex flex-col items-center px-8 pt-4 pb-0 md:pb-8">
-              <Button
-                onClick={() => setIsOpen(false)}
-                className="h-auto rounded-full px-4 py-3"
-                size="sm"
-              >
-                Start Chatting
-              </Button>
-              <div
-                className="mt-6 flex cursor-pointer flex-wrap gap-1 text-center text-sm"
-                onClick={handleContactMe}
-              >
-                <p className="text-muted-foreground">
-                  If you love it, please share it! Feedback is always welcome.
-                </p>
-                <div className="flex cursor-pointer items-center text-blue-500 hover:underline">
-                  Contact me.
-                </div>
+            <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-2 md:px-8 md:pb-6">
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={() => setIsOpen(false)} className="h-auto rounded-full px-5 py-2.5" size="sm">
+                  물어보기
+                </Button>
+                <Button asChild variant="outline" className="h-auto rounded-full px-5 py-2.5" size="sm">
+                  <Link href="/resume" onClick={() => setIsOpen(false)}>
+                    이력서 문서로 보기
+                  </Link>
+                </Button>
               </div>
+              <Link
+                href="/faq"
+                onClick={() => setIsOpen(false)}
+                className="text-muted-foreground text-sm hover:underline"
+              >
+                무엇을 물어볼 수 있는지 보기 →
+              </Link>
             </div>
           </motion.div>
         </DialogContent>

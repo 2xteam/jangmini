@@ -41,21 +41,24 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     siteName: 'jangmini',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: '장민 — Full Stack Developer' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
+    images: ['/og.png'],
   },
-  icons: {
-    /**
-     * favicon.svg 는 아직 원작자 것이다. 교체 대상.
-     * apple-touch-icon.svg 참조는 없앴다 — 그 파일은 저장소에 없었고,
-     * 없는 경로를 적어 두면 iOS 가 404 를 받는다.
-     */
-    icon: [{ url: '/favicon.svg', sizes: 'any' }],
-    shortcut: '/favicon.svg',
-  },
+  /**
+   * icons 를 손으로 적지 않는다.
+   *
+   * Next 의 파일 컨벤션이 `src/app/icon.png` · `src/app/apple-icon.png` 를
+   * 보고 <link rel="icon"> 태그를 **자동 생성**한다. 두 파일은
+   * `pnpm icons` 가 public/avatar.png 에서 만든다.
+   *
+   * 손으로 적으면 두 곳이 어긋난다 — 원본은 여기에 없는
+   * `/apple-touch-icon.svg` 를 적어 둬서 iOS 가 404 를 받고 있었다.
+   */
 };
 
 export default function RootLayout({
@@ -74,7 +77,6 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
-        <link rel="icon" href="/favicon.svg" sizes="any" />
         {/*
          * ⚠️ 원작자의 서드파티 애널리틱스(datafa.st)를 제거했다.
          *

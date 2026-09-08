@@ -4,6 +4,7 @@ import FluidCursor from '@/components/FluidCursor';
 import { Button } from '@/components/ui/button';
 import WelcomeModal from '@/components/welcome-modal';
 import { HeroAvatar } from '@/components/brand-mark';
+import { SiteMenu } from '@/components/site-menu';
 import { findSuggestion } from '@/lib/suggestions';
 import { motion } from 'framer-motion';
 import {
@@ -66,6 +67,14 @@ export default function Home() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pb-10 md:pb-20">
+      {/*
+       * 우상단 고정 영역. 원본 랜딩에는 다른 페이지로 가는 진입점이 하나도
+       * 없었다 (챗 전용 한 화면 구조였다). 문서 페이지가 생겼으므로 여기서 연다.
+       */}
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-2 md:right-8">
+        <WelcomeModal />
+        <SiteMenu />
+      </div>
       {/* big blurred footer word */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center overflow-hidden">
         <div
@@ -83,10 +92,6 @@ export default function Home() {
         initial="hidden"
         animate="visible"
       >
-        <div className="z-100">
-          <WelcomeModal />
-        </div>
-
         <h2 className="text-secondary-foreground mt-1 text-xl font-semibold md:text-2xl">
           안녕하세요, 장민입니다 👋
         </h2>
@@ -119,13 +124,13 @@ export default function Home() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me anything…"
+              placeholder="무엇이든 물어보세요"
               className="w-full border-none bg-transparent text-base text-neutral-800 placeholder:text-neutral-500 focus:outline-none dark:text-neutral-200 dark:placeholder:text-neutral-500"
             />
             <button
               type="submit"
               disabled={!input.trim()}
-              aria-label="Submit question"
+              aria-label="질문 보내기"
               className="flex items-center justify-center rounded-full bg-[#0171E3] p-2.5 text-white transition-colors hover:bg-blue-600 disabled:opacity-70 dark:bg-blue-600 dark:hover:bg-blue-700"
             >
               <ArrowRight  className="h-5 w-5" />

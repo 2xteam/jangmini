@@ -63,7 +63,7 @@ export default function ChatBottombar({
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
             placeholder={
-              disabled ? '' : isToolInProgress ? 'Tool is in progress...' : 'Ask me anything'
+              disabled ? '' : isToolInProgress ? '작업 중입니다…' : '무엇이든 물어보세요'
             }
             className={`text-md w-full border-none bg-transparent placeholder:text-gray-500 focus:outline-none ${
               disabled ? 'text-muted-foreground font-medium' : 'text-black'

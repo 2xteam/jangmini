@@ -14,7 +14,8 @@
     "fetch:resume": "node scripts/fetch-resume.mjs",
     "ingest": "node scripts/ingest.mjs",
     "r2:check": "node scripts/check-r2.mjs",
-    "images:migrate": "node scripts/migrate-images.mjs"
+    "images:migrate": "node scripts/migrate-images.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",
@@ -70,6 +71,7 @@
     "eslint-plugin-tailwindcss": "^3.18.0",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

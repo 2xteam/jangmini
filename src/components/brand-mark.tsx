@@ -19,6 +19,10 @@ import Image from 'next/image';
 /** 랜딩 빠른 질문 버튼과 같은 색 */
 const BRAND_COLORS = ['#329696', '#3E9858', '#856ED9', '#B95F9D', '#C19433'] as const;
 
+/**
+ * 작은 브랜드 마크. 헤더·모달 트리거처럼 16~40px 로 쓰이는 자리다.
+ * 이 크기에서는 메모지 얼굴이 뭉개지므로 **그라디언트 마크**를 쓴다.
+ */
 export function BrandMark({ className = 'w-6 md:w-8' }: { className?: string }) {
   return (
     <svg viewBox="0 0 48 48" className={className} role="img" aria-label="jangmini">
@@ -51,17 +55,24 @@ export function BrandMark({ className = 'w-6 md:w-8' }: { className?: string }) 
  *
  * `src` 를 주면 사진, 없으면 SVG 아바타.
  */
-export function HeroAvatar({ src, alt = '장민' }: { src?: string; alt?: string }) {
+/** 기본 아바타. public/avatar.png 는 사용자가 준 메모지다 */
+export const AVATAR_SRC = '/avatar.png';
+
+export function HeroAvatar({ src = AVATAR_SRC, alt = '장민' }: { src?: string; alt?: string }) {
   if (src) {
     return (
       <div className="relative z-10 h-52 w-48 overflow-hidden sm:h-72 sm:w-72">
+        {/*
+          * 메모지는 사방에 투명 여백이 있고 배경도 투명하다. rounded-full +
+          * object-cover 로 두면 얼굴 옆머리가 잘리므로 contain 으로 담는다.
+          */}
         <Image
           src={src}
           alt={alt}
-          width={1024}
-          height={1024}
+          width={480}
+          height={480}
           priority
-          className="h-full w-full rounded-full object-cover"
+          className="h-full w-full object-contain"
         />
       </div>
     );

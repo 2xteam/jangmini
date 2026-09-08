@@ -133,7 +133,7 @@ export default function HelperBoost({
               ) : (
                 <>
                   <ChevronUp size={14} />
-                  Show quick questions
+                  추천 질문 보기
                 </>
               )}
             </button>

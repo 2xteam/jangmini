@@ -18,6 +18,7 @@ import {
 import WelcomeModal from '@/components/welcome-modal';
 import { Info } from 'lucide-react';
 import HelperBoost from './HelperBoost';
+import { SiteMenu } from '@/components/site-menu';
 
 // ClientOnly component for client-side rendering
 //@ts-ignore
@@ -278,7 +279,7 @@ const Chat = () => {
 
   return (
     <div className="relative h-screen overflow-hidden">
-      <div className="absolute top-6 right-8 z-51 flex flex-col-reverse items-center justify-center gap-1 md:flex-row">
+      <div className="absolute top-6 right-6 z-51 flex items-center gap-1 md:right-8">
         <WelcomeModal
           trigger={
             <div className="hover:bg-accent cursor-pointer rounded-2xl px-3 py-1.5">
@@ -286,6 +287,7 @@ const Chat = () => {
             </div>
           }
         />
+        <SiteMenu />
       </div>
 
       {/* Fixed Avatar Header with Gradient */}

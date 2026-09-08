@@ -59,12 +59,16 @@ export default async function FaqPage() {
             {cat.items.map((s) => (
               <li key={s.key}>
                 {/*
-                 * 질문을 누르면 랜딩의 챗으로 넘긴다. 지금은 텍스트를 쿼리로
-                 * 보내고, Phase 5 에서 `?q=<key>` 로 바꿔 캐시를 맞힌다 —
-                 * 자유 입력이 아니라 고정 key 로 조회해야 캐시가 맞는다.
+                 * 챗 화면은 `/chat` 이고 `?query=` 를 읽어 자동 전송한다
+                 * (src/components/chat/chat.tsx 의 initialQuery).
+                 * 랜딩(`/`)은 query 를 읽지 않으므로 `/?query=` 로 보내면
+                 * 아무 일도 일어나지 않는다.
+                 *
+                 * Phase 5 에서 `?q=<key>` 로 바꿔 캐시를 맞힌다 — 자유 입력이
+                 * 아니라 고정 key 로 조회해야 캐시가 맞는다.
                  */}
                 <Link
-                  href={`/?query=${encodeURIComponent(s.question)}`}
+                  href={`/chat?query=${encodeURIComponent(s.question)}`}
                   className="hover:bg-accent/50 flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm transition-colors"
                 >
                   <span>{s.question}</span>

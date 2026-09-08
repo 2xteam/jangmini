@@ -53,7 +53,7 @@ export function DocShell({
               </Link>
             ))}
             <Link
-              href="/"
+              href="/chat"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               AI에게 묻기
