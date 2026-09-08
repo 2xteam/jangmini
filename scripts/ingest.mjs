@@ -26,6 +26,7 @@ import {
   bulletsUnder,
   firstParagraph,
   pickSummary,
+  cleanInline,
 } from './lib/notion-md.mjs';
 
 const DB_NAME = 'jangmini';
@@ -371,15 +372,78 @@ for (const s of resumeOnly) {
 const root = read('root.json');
 const rootMd = cleanMarkdown(extractImages(root.markdown).body);
 
+/**
+ * 프로필 본문 — 루트 페이지에서 `## 경력` 앞까지다.
+ *
+ * ⚠️ 처음에 `rootMd.split(/^##\s/m)[0]` 로 잘랐더니 **빈 문자열**이 나왔다.
+ * 다단 들여쓰기를 없앤 뒤로 루트 페이지가 `## 반갑습니다!` 로 시작하게 되어,
+ * 첫 조각이 헤딩 앞의 빈 부분이 됐다. `/resume` 의 "01 소개" 가 통째로 비었고
+ * 오류는 나지 않았다.
+ *
+ * 그래서 **경력 헤딩을 기준으로** 자른다. 소개 문장은 이력서 docx 쪽이 더
+ * 온전하므로 아래에서 그걸 앞에 붙인다.
+ */
+const rootIntro = rootMd
+  .split(/^##\s*경력/m)[0]
+  .replace(/^##\s*/m, '')
+  /** Notion 이 줄바꿈을 `<br>` 로 준다 */
+  .replace(/<br\s*\/?>/gi, ' ')
+  /**
+   * 다단 안의 내용이 탭으로 들여써서 온다. 헤딩만 앞서 처리했으므로 여기서
+   * 본문 줄의 들여쓰기를 없앤다 — 안 하면 `\t\tBirth : 1986.05.04` 가
+   * 그대로 저장돼 화면에 탭이 보인다.
+   */
+  .split('\n')
+  .map((l) => l.replace(/^[\t ]+/, ''))
+  /**
+   * 링크만 있는 줄은 버린다 — Notion 의 SNS 콜아웃(Instagram · Blog · Github)
+   * 이고, 같은 값이 이미 `links` 에 구조화돼 들어간다. 소개문에 두면
+   * "> [Github](…)" 가 문단으로 읽힌다.
+   */
+  .filter((l) => !/^>?\s*\[[^\]]*\]\([^)]*\)\s*$/.test(l))
+  /** 위에서 링크를 지우고 남은 빈 인용 껍데기(`>` 한 글자) */
+  .filter((l) => l.trim() !== '>')
+  .join('\n')
+  .replace(/\n{3,}/g, '\n\n')
+  .trim();
+
+/**
+ * 이력서의 "소개 / About Me" 문단 — Notion 루트에는 이만큼 긴 소개가 없다.
+ *
+ * ⚠️ 처음에 5줄을 잘랐더니 바로 뒤의 Skill Set 표까지 먹어서
+ * "기술48895257810스택 / Skill Set / 구분 / Skill" 이 소개문에 붙었다.
+ * 소개는 **한 문단짜리 한 줄**이므로 첫 비어 있지 않은 줄만 쓴다.
+ */
+const aboutFromResume = (() => {
+  const lines = read('resume.txt').split(/\r?\n/);
+  const i = lines.findIndex((l) => /About Me/.test(l));
+  if (i < 0) {
+    warnings.push('이력서에서 About Me 를 찾지 못했습니다');
+    return '';
+  }
+  const first = lines.slice(i + 1, i + 4).find((l) => l.trim().length > 80);
+  if (!first) warnings.push('About Me 다음의 소개 문단을 찾지 못했습니다');
+  return (first ?? '').trim();
+})();
+
 push({
   kind: 'profile',
   slug: uniqueSlug('profile', usedSlugs),
   title: '장민',
   summary: 'Full Stack Developer',
-  body: rootMd.split(/^##\s/m)[0].trim(),
+  body: [aboutFromResume, rootIntro].filter(Boolean).join('\n\n'),
   techStack: [],
   highlights: [],
-  links: extractLinks(root.markdown).filter((l) => !/notion\.(so|com)/.test(l.url)),
+  /**
+   * 프로필 링크는 **본인 것만** 둔다. 루트 페이지의 링크를 전부 담으면
+   * MBTI 검사 사이트(16personalities)와 전 직장 사이트(qoo10 · xorbis,
+   * 회사 로고 이미지의 캡션에서 온 것)까지 "장민의 링크" 로 나온다.
+   */
+  links: extractLinks(root.markdown).filter(
+    (l) =>
+      !/notion\.(so|com)/.test(l.url) &&
+      !/16personalities|qoo10|xorbis|tmon/.test(l.url),
+  ),
   images: [],
   order: 0,
   visibility: 'public',
@@ -404,8 +468,16 @@ for (const m of rootMd.matchAll(companyPat)) {
   for (const line of after.split('\n')) {
     if (/^#{2,3}\s/.test(line)) break;
     const b = /^\s*[-*]\s+(.+)$/.exec(line);
-    if (b) bullets.push(b[1].replace(/\*\*/g, '').trim());
-    else if (bullets.length && line.trim() === '') continue;
+    if (b) {
+      bullets.push(cleanInline(b[1]));
+      continue;
+    }
+    /**
+     * 엑스오비스만 불릿이 아니라 `개발환경 : …` / `담당업무 : …` 평문이다.
+     * 불릿만 모으면 그 회사의 담당 업무가 통째로 비었다(highlights=0).
+     */
+    const kv = /^\s*([^:\n]{2,12})\s*:\s*(.+)$/.exec(line);
+    if (kv) bullets.push(`${kv[1].trim()}: ${cleanInline(kv[2])}`);
   }
   const company = COMPANIES.find((c) => name.includes(c.name.slice(0, 3)));
   push({

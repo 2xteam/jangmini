@@ -15,11 +15,32 @@
  */
 export function extractImages(md) {
   const images = [];
-  const body = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
-    images.push({ alt: alt || '', notionUrl: url });
+  /**
+   * ⚠️ alt 안에 링크가 중첩된다.
+   *
+   *   ![[*qoo10.com*](https://qoo10.com)](https://prod-files…)
+   *
+   * alt 를 `[^\]]*` 로 두면 첫 `]` 에서 끊겨 `](https://prod-files…)` 파편이
+   * 남고, 그 파편이 링크로 잡혀 프로필 링크에 `[*qoo10.com*` 이 들어왔다.
+   * 그래서 alt 에 **대괄호 한 겹**을 허용한다.
+   */
+  const body = md.replace(/!\[((?:[^[\]]|\[[^\]]*\])*)\]\(([^)]*)\)/g, (_, alt, url) => {
+    images.push({ alt: cleanInline(alt), notionUrl: url });
     return '';
   });
   return { body, images };
+}
+
+/** 인라인 마크다운을 걷어 평문으로 만든다 — 요약·라벨에 쓴다 */
+export function cleanInline(text) {
+  return String(text ?? '')
+    /** [텍스트](url) → 텍스트 */
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*/g, '')
+    .replace(/[*`]/g, '')
+    .replace(/^\[+|\]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** 본문에서 외부 링크만 모은다 (S3 presigned 는 이미 떼어냈다) */
@@ -31,7 +52,7 @@ export function extractLinks(md) {
     if (url.includes('amazonaws.com')) continue;
     if (seen.has(url)) continue;
     seen.add(url);
-    links.push({ label: (m[1] || '').trim() || url, url });
+    links.push({ label: cleanInline(m[1]) || url, url });
   }
   /** mention-page 로 들어온 노션 내부 링크도 참고용으로 담는다 */
   for (const m of md.matchAll(/<mention-page url="([^"]+)"\s*\/>/g)) {
@@ -152,7 +173,12 @@ export function firstParagraph(sectionText) {
     const t = line.trim();
     if (!t) continue;
     if (t.startsWith('#') || t.startsWith('-') || t.startsWith('*') || t.startsWith('>')) continue;
-    return t.replace(/\*\*/g, '');
+    /**
+     * 요약은 **평문으로** 저장한다. 마크다운 렌더러를 거치지 않는 자리(카드·
+     * 목록·OG description)에 쓰이므로, `[ASP.NET](http://asp.net/)` 같은
+     * 인라인 링크가 그대로 화면에 보이는 일이 있었다.
+     */
+    return cleanInline(t);
   }
   return '';
 }
@@ -180,7 +206,7 @@ export function pickSummary(...sectionTexts) {
       const m = /^\s*[-*]\s+(.+)$/.exec(line);
       if (!m) continue;
       /** `**라벨**:` 접두사를 떼고 본문만 본다 */
-      const t = m[1].replace(/^\*{2}[^*]+\*{2}\s*:\s*/, '').replace(/\*\*/g, '').trim();
+      const t = cleanInline(m[1].replace(/^\*{2}[^*]+\*{2}\s*:\s*/, ''));
       if (t) bullets.push(t);
     }
   }
