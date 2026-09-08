@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { PRIMARY_SUGGESTIONS, SUGGESTIONS_BY_CATEGORY, findSuggestion } from '@/lib/suggestions';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import {
@@ -34,95 +35,34 @@ interface HelperBoostProps {
   hasReachedLimit?: boolean;
 }
 
-const questions = {
-  Me: 'Who are you? I want to know more about you.',
-  Projects: 'What are your projects? What are you working on right now?',
-  Skills: 'What are your skills? Give me a list of your soft and hard skills.',
-  Fun: "What the craziest thing you've ever done? (mb?) What are your hobbies? ",
-  Contact:
-    'How can I reach you? What kind of project would make you say "yes" immediately?',
+/**
+ * 문장은 src/lib/suggestions.ts 가 원본이다 — 랜딩·드로어·FAQ 가 같은 목록을
+ * 쓴다. 원본은 세 곳에 다른 문장이 하드코딩돼 있었다.
+ */
+const questionConfig = [
+  { key: 'who-are-you', label: '소개', color: '#329696', icon: Laugh },
+  { key: 'career-summary', label: '경력', color: '#3E9858', icon: BriefcaseBusiness },
+  { key: 'featured-projects', label: '프로젝트', color: '#856ED9', icon: Layers },
+  { key: 'skills', label: '기술', color: '#B95F9D', icon: PartyPopper },
+  { key: 'contact', label: '연락', color: '#C19433', icon: UserRoundSearch },
+];
+
+const specialQuestions = PRIMARY_SUGGESTIONS.map((s) => s.question);
+
+const CATEGORY_ICONS: Record<string, typeof UserSearch> = {
+  me: UserSearch,
+  career: BriefcaseIcon,
+  projects: CodeIcon,
+  skills: GraduationCapIcon,
+  contact: MailIcon,
 };
 
-const questionConfig = [
-  { key: 'Me', color: '#329696', icon: Laugh },
-  { key: 'Projects', color: '#3E9858', icon: BriefcaseBusiness },
-  { key: 'Skills', color: '#856ED9', icon: Layers },
-  { key: 'Fun', color: '#B95F9D', icon: PartyPopper },
-  { key: 'Contact', color: '#C19433', icon: UserRoundSearch },
-];
-
-// Helper drawer data
-const specialQuestions = [
-  'Mountain Bike you said?? Show me!',
-  'Who are you?',
-  'Can I see your resume?',
-  'What projects are you most proud of?',
-  'What are your skills?',
-  'How can I reach you?',
-  "What's the craziest thing you've ever done?",
-];
-
-const questionsByCategory = [
-  {
-    id: 'me',
-    name: 'Me',
-    icon: UserSearch,
-    questions: [
-      'Who are you?',
-      'What are your passions?',
-      'How did you get started in tech?',
-      'Where do you see yourself in 5 years?',
-    ],
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    icon: BriefcaseIcon,
-    questions: [
-      'Can I see your resume?',
-      'What makes you a valuable team member?',
-      'Where are you working now?',
-      'Why should I hire you?',
-      "What's your educational background?",
-    ],
-  },
-  {
-    id: 'projects',
-    name: 'Projects',
-    icon: CodeIcon,
-    questions: ['What projects are you most proud of?'],
-  },
-  {
-    id: 'skills',
-    name: 'Skills',
-    icon: GraduationCapIcon,
-    questions: [
-      'What are your skills?',
-      'How was your experience at École 42?',
-    ],
-  },
-  {
-    id: 'fun',
-    name: 'Fun',
-    icon: PartyPopper,
-    questions: [
-      'Mountain Bike you said?? Show me!',
-      "What's the craziest thing you've ever done?",
-      'Mac or PC?',
-      'What are you certain about that 90% get wrong?',
-    ],
-  },
-  {
-    id: 'contact',
-    name: 'Contact & Future',
-    icon: MailIcon,
-    questions: [
-      'How can I reach you?',
-      "What kind of project would make you say 'yes' immediately?",
-      'Where are you located?',
-    ],
-  },
-];
+const questionsByCategory = SUGGESTIONS_BY_CATEGORY.map((c) => ({
+  id: c.category,
+  name: c.label,
+  icon: CATEGORY_ICONS[c.category] ?? UserSearch,
+  questions: c.items.map((i) => i.question),
+}));
 
 // Animated Chevron component
 const AnimatedChevron = () => {
@@ -154,7 +94,7 @@ export default function HelperBoost({
 
   const handleQuestionClick = (questionKey: string) => {
     if (submitQuery) {
-      submitQuery(questions[questionKey as keyof typeof questions]);
+      submitQuery(findSuggestion(questionKey)?.question ?? questionKey);
     }
   };
 
@@ -206,7 +146,7 @@ export default function HelperBoost({
                 className="flex w-full flex-wrap gap-1 md:gap-3"
                 style={{ justifyContent: 'safe center' }}
               >
-                {questionConfig.map(({ key, color, icon: Icon }) => (
+                {questionConfig.map(({ key, label, color, icon: Icon }) => (
                   <Button
                     key={key}
                     onClick={() => !hasReachedLimit && handleQuestionClick(key)}
@@ -220,7 +160,7 @@ export default function HelperBoost({
                   >
                     <div className="flex items-center gap-3 text-gray-700">
                       <Icon size={18} strokeWidth={2} color={color} />
-                      <span className="text-sm font-medium">{key}</span>
+                      <span className="text-sm font-medium">{label}</span>
                     </div>
                   </Button>
                 ))}

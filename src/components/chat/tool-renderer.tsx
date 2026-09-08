@@ -1,12 +1,10 @@
 // src/components/chat/tool-renderer.tsx
 import { Contact } from '../contact';
-import Crazy from '../crazy';
-import InternshipCard from '../InternshipCard';
 import { Presentation } from '../presentation';
 import AllProjects from '../projects/AllProjects';
 import Resume from '../resume';
 import Skills from '../skills';
-import Sports from '../sport';
+import Experience from '../experience';
 
 interface ToolRendererProps {
   toolInvocations: any[];
@@ -20,7 +18,7 @@ export default function ToolRenderer({
   return (
     <div className="w-full transition-all duration-300">
       {toolInvocations.map((tool) => {
-        const { toolCallId, toolName } = tool;
+        const { toolCallId, toolName, result } = tool;
 
         // Return specialized components based on tool name
         switch (toolName) {
@@ -30,7 +28,7 @@ export default function ToolRenderer({
                 key={toolCallId}
                 className="w-full overflow-hidden rounded-lg"
               >
-                <AllProjects />
+                <AllProjects data={result} />
               </div>
             );
 
@@ -40,49 +38,35 @@ export default function ToolRenderer({
                 key={toolCallId}
                 className="w-full overflow-hidden rounded-lg"
               >
-                <Presentation />
+                <Presentation data={result} />
               </div>
             );
 
           case 'getResume':
             return (
               <div key={toolCallId} className="w-full rounded-lg">
-                <Resume />
+                <Resume data={result} />
+              </div>
+            );
+
+          case 'getExperience':
+            return (
+              <div key={toolCallId} className="w-full rounded-lg">
+                <Experience data={result} />
               </div>
             );
 
           case 'getContact':
             return (
               <div key={toolCallId} className="w-full rounded-lg">
-                <Contact />
+                <Contact data={result} />
               </div>
             );
 
           case 'getSkills':
             return (
               <div key={toolCallId} className="w-full rounded-lg">
-                <Skills />
-              </div>
-            );
-
-          case 'getSports':
-            return (
-              <div key={toolCallId} className="w-full rounded-lg">
-                <Sports />
-              </div>
-            );
-
-          case 'getCrazy':
-            return (
-              <div key={toolCallId} className="w-full rounded-lg">
-                <Crazy />
-              </div>
-            );
-
-          case 'getInternship':
-            return (
-              <div key={toolCallId} className="w-full rounded-lg">
-                <InternshipCard />
+                <Skills data={result} />
               </div>
             );
 

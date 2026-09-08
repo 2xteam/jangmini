@@ -4,6 +4,7 @@ import FluidCursor from '@/components/FluidCursor';
 import { Button } from '@/components/ui/button';
 import WelcomeModal from '@/components/welcome-modal';
 import { HeroAvatar } from '@/components/brand-mark';
+import { findSuggestion } from '@/lib/suggestions';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -16,21 +17,18 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-/* ---------- quick-question data ---------- */
-const questions = {
-  Me: 'Who are you? I want to know more about you.',
-  Projects: 'What are your projects? What are you working on right now?',
-  Skills: 'What are your skills? Give me a list of your soft and hard skills.',
-  Fun: 'What’s the craziest thing you’ve ever done? What are your hobbies?',
-  Contact: 'How can I contact you?',
-} as const;
-
+/* ---------- 빠른 질문 ---------- */
+/**
+ * 문장은 src/lib/suggestions.ts 가 원본이다. 원본은 이 파일과 HelperBoost 에
+ * 각각 다른 문장이 하드코딩돼 있어서, 랜딩에서 누른 질문과 드로어의 질문이
+ * 달랐다. 아이콘·색만 여기서 정한다.
+ */
 const questionConfig = [
-  { key: 'Me', color: '#329696', icon: Laugh },
-  { key: 'Projects', color: '#3E9858', icon: BriefcaseBusiness },
-  { key: 'Skills', color: '#856ED9', icon: Layers },
-  { key: 'Fun', color: '#B95F9D', icon: PartyPopper },
-  { key: 'Contact', color: '#C19433', icon: UserRoundSearch },
+  { key: 'who-are-you', label: '소개', color: '#329696', icon: Laugh },
+  { key: 'career-summary', label: '경력', color: '#3E9858', icon: BriefcaseBusiness },
+  { key: 'featured-projects', label: '프로젝트', color: '#856ED9', icon: Layers },
+  { key: 'skills', label: '기술', color: '#B95F9D', icon: PartyPopper },
+  { key: 'contact', label: '연락', color: '#C19433', icon: UserRoundSearch },
 ] as const;
 
 /* ---------- component ---------- */
@@ -137,16 +135,16 @@ export default function Home() {
 
         {/* quick-question grid */}
         <div className="mt-4 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-5">
-          {questionConfig.map(({ key, color, icon: Icon }) => (
+          {questionConfig.map(({ key, label, color, icon: Icon }) => (
             <Button
               key={key}
-              onClick={() => goToChat(questions[key])}
+              onClick={() => goToChat(findSuggestion(key)?.question ?? label)}
               variant="outline"
               className="border-border hover:bg-border/30 aspect-square w-full cursor-pointer rounded-2xl border bg-white/30 py-8 shadow-none backdrop-blur-lg active:scale-95 md:p-10"
             >
               <div className="flex h-full flex-col items-center justify-center gap-1 text-gray-700">
                 <Icon size={22} strokeWidth={2} color={color} />
-                <span className="text-xs font-medium sm:text-sm">{key}</span>
+                <span className="text-xs font-medium sm:text-sm">{label}</span>
               </div>
             </Button>
           ))}

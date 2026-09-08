@@ -2,13 +2,11 @@ import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { SYSTEM_PROMPT } from './prompt';
 import { getContact } from './tools/getContact';
-import { getCrazy } from './tools/getCrazy';
-import { getInternship } from './tools/getIntership';
+import { getExperience } from './tools/getExperience';
 import { getPresentation } from './tools/getPresentation';
 import { getProjects } from './tools/getProjects';
 import { getResume } from './tools/getResume';
 import { getSkills } from './tools/getSkills';
-import { getSports } from './tools/getSport';
 
 export const maxDuration = 30;
 
@@ -125,15 +123,20 @@ export async function POST(req: Request) {
   }
 
   try {
+    /**
+     * ⚠️ tool 을 더하거나 지울 때는 **세 군데를 함께** 고친다. 하나라도 빠지면
+     * 런타임 에러다 —
+     *   ① 이 객체
+     *   ② src/components/chat/tool-renderer.tsx 의 case
+     *   ③ 해당 컴포넌트 파일
+     */
     const tools = {
-      getProjects,
       getPresentation,
+      getExperience,
+      getProjects,
+      getSkills,
       getResume,
       getContact,
-      getSkills,
-      getSports,
-      getCrazy,
-      getInternship,
     };
 
     const result = streamText({

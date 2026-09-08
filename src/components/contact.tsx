@@ -1,92 +1,52 @@
 'use client';
 
-import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
-export function Contact() {
-  // Contact information
-  const contactInfo = {
-    name: 'Raphael Giraud',
-    email: 'raphaelgiraud12@gmail.com',
-    handle: '@Raphael.Giraud',
-    socials: [
-      {
-        name: 'LinkedIn',
-        url: 'https://www.linkedin.com/in/raphael-giraud-60939519a/',
-      },
-      {
-        name: 'Youtube',
-        url: 'https://www.youtube.com/@toukoum',
-      },
-      {
-        name: 'Instagram',
-        url: 'https://www.instagram.com/raphael.giraud/',
-      },
-      {
-        name: 'Discord',
-        url: 'https://discord.com/users/toukoum',
-      },
-      {
-        name: 'Github',
-        url: 'https://github.com/toukoum',
-      },
-      {
-        name: 'X',
-        url: 'https://x.com/toukoumcode',
-      },
-    ],
-  };
+/**
+ * 연락 방법. `getContact` tool 이 DB(kind: 'profile')의 links 를 읽어 온다.
+ * 원본은 원작자의 이메일·전화·SNS 가 하드코딩돼 있었다.
+ */
 
-  // Function to handle opening links
-  const openLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+type ContactData = { links?: { label: string; url: string }[]; note?: string } | undefined;
+
+export function Contact({ data }: { data?: ContactData }) {
+  const links = data?.links ?? [];
 
   return (
-    <div className="mx-auto mt-8 w-full">
-      <div className="bg-accent w-full overflow-hidden rounded-3xl px-6 py-8 font-sans sm:px-10 md:px-16 md:py-12">
-        {/* Header Section */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-foreground text-3xl font-semibold md:text-4xl">
-            Contacts
-          </h2>
-          <span className="mt-2 sm:mt-0">
-            {contactInfo.handle}
-          </span>
-        </div>
-
-        {/* Email Section */}
-        <div className="mt-8 flex flex-col md:mt-10">
-          <div
-            className="group mb-5 cursor-pointer"
-            onClick={() => openLink(`mailto:${contactInfo.email}`)}
-          >
-            <div className="flex items-center gap-1">
-              <span className="text-base font-medium text-blue-500 hover:underline sm:text-lg">
-                {contactInfo.email}
-              </span>
-              <ChevronRight className="h-5 w-5 text-blue-500 transition-transform duration-300 group-hover:translate-x-1" />
-            </div>
-          </div>
-
-          {/* Social Links */}
-          <div className="flex flex-wrap gap-x-6 gap-y-5 sm:gap-x-8">
-            {contactInfo.socials.map((social) => (
-              <button
-                key={social.name}
-                className="text-muted-foreground hover:text-foreground cursor-pointer text-sm transition-colors"
-                onClick={() => openLink(social.url)}
-                title={social.name}
-              >
-                {social.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+    <motion.div
+      initial={{ scale: 0.98, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
+      className="mx-auto w-full max-w-5xl"
+    >
+      <Card className="w-full border-none px-0 shadow-none">
+        <CardHeader className="px-0 pb-1">
+          <CardTitle className="text-primary px-0 text-3xl font-bold">연락</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 px-0">
+          {links.length ? (
+            <ul className="space-y-2">
+              {links.map((l) => (
+                <li key={l.url}>
+                  <a
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:bg-accent/50 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{l.label}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground text-sm">연락처 정보를 불러오지 못했습니다.</p>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
-
-export default Contact;
