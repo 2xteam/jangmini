@@ -9,7 +9,10 @@
     "lint": "next lint",
     "dev:verify": "next dev -p 3016",
     "db:check": "node scripts/check-db.mjs",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "fetch:notion": "node scripts/fetch-notion.mjs",
+    "fetch:resume": "node scripts/fetch-resume.mjs",
+    "ingest": "node scripts/ingest.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",

@@ -26,8 +26,12 @@ export type PortfolioDoc = {
   company?: string;
   role?: string;
   teamSize?: string;
-  /** 기여도 0~1 */
+  /** 기여도 0~1 (프로젝트) */
   contribution?: number;
+  /** 분류 — 스킬의 "소프트웨어 / 전문적 지식 / 언어", 활동의 "봉사활동 / 대외활동" */
+  category?: string;
+  /** 숙련도 0~1 (스킬) */
+  level?: number;
   period?: { start?: Date; end?: Date; label?: string };
   techStack: string[];
   highlights: string[];
@@ -56,6 +60,8 @@ const schema = new Schema<PortfolioDoc>(
     role: String,
     teamSize: String,
     contribution: Number,
+    category: String,
+    level: Number,
     period: {
       start: Date,
       end: Date,
