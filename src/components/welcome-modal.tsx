@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { BrandMark } from '@/components/brand-mark';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation'; // Importation correcte pour Next.js 13+
 import { useState } from 'react';
 
@@ -30,14 +30,8 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
       className="h-auto w-auto cursor-pointer rounded-2xl bg-white/30 p-3 shadow-lg backdrop-blur-lg hover:bg-white/60 focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
       onClick={() => setIsOpen(true)}
     >
-      <Image
-        src="/logo-toukoum.svg"
-        width={100}
-        height={100}
-        alt="Logo"
-        className="w-6 md:w-8"
-      />
-      <span className="sr-only">About Toukoum</span>
+      <BrandMark className="w-6 md:w-8" />
+      <span className="sr-only">jangmini 소개</span>
     </Button>
   );
 

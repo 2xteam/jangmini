@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils';
 import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 
 // Load Inter font for non-Apple devices
@@ -12,54 +11,50 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+const SITE_URL = 'https://jangmini.myjane.co.kr';
+const TITLE = 'jangmini — 장민 포트폴리오';
+const DESCRIPTION =
+  '14년차 풀스택 개발자 장민의 포트폴리오. 프로젝트와 이력을 문서로 보거나, AI에게 물어볼 수 있습니다.';
+
 export const metadata: Metadata = {
-  title: 'Toukoum Portfolio',
-  description:
-    'Interactive portfolio with an AI-powered Memoji that answers questions about me, my skills, and my experience',
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
   keywords: [
-    'Toukoum',
-    'Portfolio',
-    'Developer',
-    'AI',
-    'Interactive',
-    'Memoji',
-    'Web Development',
-    'Full Stack',
+    '장민',
+    'jangmini',
+    '포트폴리오',
+    '풀스택 개발자',
+    'Full Stack Developer',
     'Next.js',
     'React',
+    'TypeScript',
+    'ASP.NET',
+    'AI',
   ],
-  authors: [
-    {
-      name: 'Toukoum',
-      url: 'https://toukoum.fr',
-    },
-  ],
-  creator: 'Toukoum',
+  authors: [{ name: '장민', url: SITE_URL }],
+  creator: '장민',
   openGraph: {
     type: 'website',
-    locale: 'en_US',
-    url: 'https://toukoum.fr',
-    title: 'Toukoum Portfolio',
-    description:
-      'Interactive portfolio with an AI-powered Memoji that answers questions about me',
-    siteName: 'Toukoum Portfolio',
+    locale: 'ko_KR',
+    url: SITE_URL,
+    title: TITLE,
+    description: DESCRIPTION,
+    siteName: 'jangmini',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Toukoum Portfolio',
-    description:
-      'Interactive portfolio with an AI-powered Memoji that answers questions about me',
-    creator: '@toukoum',
+    title: TITLE,
+    description: DESCRIPTION,
   },
   icons: {
-    icon: [
-      {
-        url: '/favicon.svg',
-        sizes: 'any',
-      },
-    ],
-    shortcut: '/favicon.svg?v=2',
-    apple: '/apple-touch-icon.svg?v=2',
+    /**
+     * favicon.svg 는 아직 원작자 것이다. 교체 대상.
+     * apple-touch-icon.svg 참조는 없앴다 — 그 파일은 저장소에 없었고,
+     * 없는 경로를 적어 두면 iOS 가 404 를 받는다.
+     */
+    icon: [{ url: '/favicon.svg', sizes: 'any' }],
+    shortcut: '/favicon.svg',
   },
 };
 
@@ -69,20 +64,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    /**
+     * 본문이 한국어이므로 ko 다. en 으로 두면 스크린 리더가 한국어를
+     * 영어 발음으로 읽고, 브라우저 번역이 엉뚱하게 걸린다.
+     */
+    <html lang="ko" suppressHydrationWarning>
       <head>
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
         <link rel="icon" href="/favicon.svg" sizes="any" />
-        <Script
-          defer
-          data-website-id="68e067ba369b1b7f1f096056"
-          data-domain="toukoum.fr"
-          data-allow-localhost="true"
-          src="https://datafa.st/js/script.js"
-        ></Script>
+        {/*
+         * ⚠️ 원작자의 서드파티 애널리틱스(datafa.st)를 제거했다.
+         *
+         * `data-website-id="68e067ba…"` · `data-domain="toukoum.fr"` 로 박혀
+         * 있어서, 배포된 우리 사이트의 방문자 트래픽이 **원작자 계정으로**
+         * 전송되고 있었다. 우리 방문자 데이터를 남에게 보내는 것이므로
+         * 기능 문제가 아니라 프라이버시 문제다.
+         *
+         * 방문자 통계가 필요하면 @vercel/analytics 가 이미 아래에 있다.
+         */}
       </head>
       <body
         className={cn(

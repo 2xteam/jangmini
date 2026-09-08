@@ -70,6 +70,12 @@ const FEATURED = [
   { match: 'WMS 시스템', why: 'React Native PDA 스캐너 · 현장 검증' },
   { match: 'OMS 기업 주문', why: '설로인 OMS · API 호출 99% 감소' },
   { match: 'ASP.NET FE & BE', why: '.NET → React 전환' },
+  /**
+   * AI 작업으로 소개하지 않는다. 이력서 기술스택에 OpenAI 가 적혀 있지만
+   * 노션 본문의 실제 작업은 레거시 구조 정리·용어 통일·팀 자동배정이다
+   * (2026-09-08 사용자 확인).
+   */
+  { match: 'Inquiry Ticket', why: '트랙스로지스 · 고객응대(Ticket) 서비스 개발' },
 ];
 
 /**

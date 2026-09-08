@@ -3,6 +3,7 @@
 import FluidCursor from '@/components/FluidCursor';
 import { Button } from '@/components/ui/button';
 import WelcomeModal from '@/components/welcome-modal';
+import { HeroAvatar } from '@/components/brand-mark';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -12,7 +13,6 @@ import {
   PartyPopper,
   UserRoundSearch,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -60,24 +60,11 @@ export default function Home() {
     },
   };
 
-  useEffect(() => {
-    // Précharger les assets du chat en arrière-plan
-    const img = new window.Image();
-    img.src = '/landing-memojis.png';
-
-    // Précharger les vidéos aussi
-    const linkWebm = document.createElement('link');
-    linkWebm.rel = 'preload'; // Note: prefetch au lieu de preload
-    linkWebm.as = 'video';
-    linkWebm.href = '/final_memojis.webm';
-    document.head.appendChild(linkWebm);
-
-    const linkMp4 = document.createElement('link');
-    linkMp4.rel = 'prefetch';
-    linkMp4.as = 'video';
-    linkMp4.href = '/final_memojis_ios.mp4';
-    document.head.appendChild(linkMp4);
-  }, []);
+  /**
+   * 원작자의 메모지 이미지·영상 프리로드가 있던 자리다. 세 파일을 모두 지웠으므로
+   * 프리로드도 없앴다 — 두면 404 를 세 번 받고 콘솔에 경고가 남는다.
+   * 실제 사진을 넣게 되면 그 파일만 다시 프리로드한다.
+   */
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pb-10 md:pb-20">
@@ -87,7 +74,7 @@ export default function Home() {
           className="hidden bg-gradient-to-b from-neutral-500/10 to-neutral-500/0 bg-clip-text text-[10rem] leading-none font-black text-transparent select-none sm:block lg:text-[16rem]"
           style={{ marginBottom: '-2.5rem' }}
         >
-          Toukoum
+          jangmini
         </div>
       </div>
 
@@ -103,24 +90,15 @@ export default function Home() {
         </div>
 
         <h2 className="text-secondary-foreground mt-1 text-xl font-semibold md:text-2xl">
-          Hey, I'm Aaaaby 👋
+          안녕하세요, 장민입니다 👋
         </h2>
         <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl lg:text-7xl">
-          AI Engineer
+          Full Stack Developer
         </h1>
       </motion.div>
 
-      {/* centre memoji */}
-      <div className="relative z-10 h-52 w-48 overflow-hidden sm:h-72 sm:w-72">
-        <Image
-          src="/landing-memojis.png"
-          alt="Hero memoji"
-          width={2000}
-          height={2000}
-          priority
-          className="translate-y-14 scale-[2] object-cover"
-        />
-      </div>
+      {/* 히어로 아바타 — public/avatar.png 를 넣으면 src 를 주면 된다 */}
+      <HeroAvatar />
 
       {/* input + quick buttons */}
       <motion.div
