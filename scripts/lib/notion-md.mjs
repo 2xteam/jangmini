@@ -25,7 +25,13 @@ export function extractImages(md) {
    * 그래서 alt 에 **대괄호 한 겹**을 허용한다.
    */
   const body = md.replace(/!\[((?:[^[\]]|\[[^\]]*\])*)\]\(([^)]*)\)/g, (_, alt, url) => {
-    images.push({ alt: cleanInline(alt), notionUrl: url });
+    /**
+     * ⚠️ Notion 은 파일이 없는 이미지 블록을 `![]()` 로 준다 — 원본 페이지에
+     * 빈 이미지 블록이 남아 있는 경우다(커뮤니티 플렛폼 2건 · 룰렛 플렛폼 1건).
+     * 실제 이미지가 아니므로 세지도, 받지도 않는다. 넘기면 R2 이관에서
+     * "Failed to parse URL from" 으로 실패한다.
+     */
+    if (url.trim()) images.push({ alt: cleanInline(alt), notionUrl: url });
     return '';
   });
   return { body, images };

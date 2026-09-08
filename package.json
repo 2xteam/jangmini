@@ -13,7 +13,8 @@
     "fetch:notion": "node scripts/fetch-notion.mjs",
     "fetch:resume": "node scripts/fetch-resume.mjs",
     "ingest": "node scripts/ingest.mjs",
-    "r2:check": "node scripts/check-r2.mjs"
+    "r2:check": "node scripts/check-r2.mjs",
+    "images:migrate": "node scripts/migrate-images.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",

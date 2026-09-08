@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { DocShell } from '@/components/doc-shell';
@@ -34,7 +35,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const p = await getProject(slug);
   if (!p) notFound();
 
-  const imageCount = (p.source as { imageCount?: number })?.imageCount ?? 0;
+  /**
+   * 이관 후에는 `images` 배열이 진실이다. `source.imageCount` 는 수집 시점의
+   * 힌트일 뿐이고 빈 이미지 블록 때문에 실제와 어긋난다.
+   */
+  const images = p.images ?? [];
 
   return (
     <DocShell
@@ -110,15 +115,35 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         <Markdown remarkPlugins={[remarkGfm]}>{p.body ?? ''}</Markdown>
       </article>
 
-      {imageCount > 0 && (
-        /**
-         * 이미지는 아직 R2 로 옮기지 않았다. Notion 이 주는 URL 은 presigned
-         * 이고 한 시간 뒤 깨지므로 저장하지 않았고, 몇 장이 있었는지만 기록해
-         * 두었다. 옮기면 이 자리에 그린다.
-         */
-        <p className="text-muted-foreground mt-8 border-t pt-6 text-xs">
-          이 프로젝트에는 이미지 {imageCount}장이 있습니다. 이관 중입니다.
-        </p>
+      {images.length > 0 && (
+        <section className="mt-8 border-t pt-6">
+          <h2 className="mb-3 text-lg font-semibold">화면</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {images.map((img, i) => (
+              <a
+                key={img.url}
+                href={img.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:bg-accent/50 block overflow-hidden rounded-xl border transition-colors"
+              >
+                {/*
+                 * 원본 크기를 모른다(Notion 이 주지 않는다). 그래서 고정 비율
+                 * 컨테이너에 `object-contain` 으로 담는다 — `cover` 로 두면
+                 * 스크린샷의 위아래가 잘려 정작 봐야 할 UI 가 사라진다.
+                 */}
+                <Image
+                  src={img.url}
+                  alt={img.alt ?? `${p.title} 이미지 ${i + 1}`}
+                  width={1600}
+                  height={900}
+                  sizes="(min-width: 640px) 50vw, 100vw"
+                  className="h-auto w-full bg-white object-contain"
+                />
+              </a>
+            ))}
+          </div>
+        </section>
       )}
     </DocShell>
   );
