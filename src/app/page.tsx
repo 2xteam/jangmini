@@ -1,6 +1,5 @@
 'use client';
 
-import { FastfolioCTA } from '@/components/fastfolio-cta';
 import FluidCursor from '@/components/FluidCursor';
 import { Button } from '@/components/ui/button';
 import WelcomeModal from '@/components/welcome-modal';
@@ -91,8 +90,6 @@ export default function Home() {
           Toukoum
         </div>
       </div>
-
-      <FastfolioCTA/>
 
       {/* header */}
       <motion.div

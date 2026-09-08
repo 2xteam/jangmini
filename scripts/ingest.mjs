@@ -50,6 +50,49 @@ const COMPANIES = [
  */
 const SIDE_PROJECT_KEYS = ['Ignite Architecture', 'SnapApps', '함히보까', '우리아이 칭찬앱'];
 
+/**
+ * 대표 프로젝트. `/resume` 에 이것만 싣는다.
+ *
+ * **기여도로는 고를 수 없다.** 「기여도 ≥ 0.9 또는 2024년 이후」로 뽑으면 28건이
+ * 나오고 2011~2012 박물관 프로젝트가 전부 1.0 으로 들어온다 — 1인 작업이라
+ * 당연히 1.0 이다. 기여도는 "혼자 했는가"를 재는 값이고 "대표작인가"를 재지
+ * 않는다. 그래서 사람이 고른 목록을 둔다 (2026-09-08 사용자 선정).
+ *
+ * 선정 기준 — 전환기 이후의 작업 + 지금 시장에서 강점이 되는 것.
+ *
+ * 지금은 이 목록이 원본이다. Admin 에서 토글하게 되면 그때 DB 로 원본을
+ * 옮긴다 (그전까지 재수집이 DB 값을 덮으므로 두 곳에 두지 않는다).
+ */
+const FEATURED = [
+  { match: 'Ignite Architecture', why: '사이드 · 건축사무소 브랜딩. 기획~납품 전 과정' },
+  { match: 'TracX AI Agent', why: '트랙스로지스 AI · RAG + Tool Calling' },
+  { match: 'SnapApps', why: '사이드 · SnapWord/SnapNote 시리즈' },
+  { match: 'WMS 시스템', why: 'React Native PDA 스캐너 · 현장 검증' },
+  { match: 'OMS 기업 주문', why: '설로인 OMS · API 호출 99% 감소' },
+  { match: 'ASP.NET FE & BE', why: '.NET → React 전환' },
+];
+
+/**
+ * 슬러그 손질. 로마자 자동 생성은 정확하지만 URL 로 길고 안 예쁘다
+ * (`baesongbi-gwanripeiji-next-js-ripektoring`). **공유될 프로젝트만** 다듬는다.
+ * 적용하려면 `--reslug` 를 준다 — 기본은 기존 슬러그를 덮지 않는다.
+ */
+const SLUG_OVERRIDES = [
+  { match: 'Ignite Architecture', slug: 'ignite-architecture' },
+  { match: 'TracX AI Agent', slug: 'tracx-ai-agent' },
+  { match: 'SnapApps', slug: 'snapapps' },
+  { match: 'WMS 시스템', slug: 'wms-pda-scanner' },
+  { match: 'OMS 기업 주문', slug: 'sirloin-oms' },
+  { match: 'ASP.NET FE & BE', slug: 'aspnet-fe-be-split' },
+  { match: '함히보까', slug: 'hamhibokka' },
+  { match: 'Inquiry Ticket', slug: 'inquiry-ticket-admin' },
+  { match: '배송비 관리 Admin UX', slug: 'shipping-fee-admin-ux' },
+  { match: '배송비 관리페이지 Next.js', slug: 'shipping-fee-nextjs' },
+];
+
+const isFeatured = (title) => FEATURED.some((f) => title.includes(f.match));
+const slugOverride = (title) => SLUG_OVERRIDES.find((o) => title.includes(o.match))?.slug ?? null;
+
 function loadEnv() {
   for (const file of ['.env.local', '.env']) {
     try {
@@ -178,7 +221,7 @@ projectRows.forEach(({ row, body }, i) => {
 
   push({
     kind: 'project',
-    slug: uniqueSlug(slugify(title), usedSlugs, `project-${i + 1}`),
+    slug: uniqueSlug(slugOverride(title) ?? slugify(title), usedSlugs, `project-${i + 1}`),
     title,
     summary,
     body: cleaned,
@@ -197,6 +240,8 @@ projectRows.forEach(({ row, body }, i) => {
     /** 이미지는 R2 재호스팅 단계에서 채운다. 만료 URL 을 저장하지 않는다 */
     images: [],
     order: i,
+    /** `/resume` 에 싣는 대표 프로젝트 → FEATURED 주석 참고 */
+    featured: isFeatured(title),
     visibility: 'public',
     source: {
       type: 'notion',
@@ -566,11 +611,24 @@ const dirty = docs.filter((d) => d.body && /^#{1,6}[^\n]*\*/m.test(d.body));
 console.log(`\n  본문 헤딩에 남은 * 기호  ${dirty.length}건${dirty.length ? ' ← 정리 규칙 확인 필요' : ' ✓'}`);
 if (dirty.length) for (const d of dirty.slice(0, 5)) console.log(`    ${d.title.slice(0, 30)}`);
 
-console.log('\n─── 프로젝트 슬러그 (최신순) ───');
+const featuredDocs = (byKind.project ?? []).filter((d) => d.featured);
+console.log(`\n─── 대표 프로젝트 ${featuredDocs.length}건 (/resume 에 싣는 것) ───`);
+for (const d of featuredDocs) {
+  const why = FEATURED.find((f) => d.title.includes(f.match))?.why ?? '';
+  console.log(`  ${(d.period.label || '-').padEnd(19)} ${d.slug.padEnd(22)} ${why}`);
+}
+const notFound = FEATURED.filter(
+  (f) => !(byKind.project ?? []).some((d) => d.title.includes(f.match)),
+);
+if (notFound.length) {
+  console.log(`  ! FEATURED 에 있으나 못 찾은 항목: ${notFound.map((m) => m.match).join(', ')}`);
+}
+
+console.log('\n─── 프로젝트 슬러그 (최신순 · ★ 는 대표) ───');
 for (const d of byKind.project ?? []) {
   console.log(
-    `  ${(d.period.label || '-').padEnd(19)} ${(d.company ?? '-').padEnd(9)} ` +
-      `${d.slug.slice(0, 44).padEnd(46)} ${d.title.slice(0, 28)}`,
+    `  ${d.featured ? '★' : ' '} ${(d.period.label || '-').padEnd(19)} ${(d.company ?? '-').padEnd(9)} ` +
+      `${d.slug.slice(0, 42).padEnd(44)} ${d.title.slice(0, 26)}`,
   );
 }
 
