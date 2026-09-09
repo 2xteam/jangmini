@@ -526,6 +526,86 @@ for (const m of rootMd.matchAll(companyPat)) {
 }
 if (expOrder === 0) warnings.push('루트 페이지에서 경력 블록을 찾지 못했습니다');
 
+/* ══════════════ 3-b. 손으로 등록한 프로젝트 ═══════════════════
+ *
+ * Notion 에 없는 프로젝트를 `content/projects-manual.json` 에서 읽는다.
+ * `source.type: 'manual'` 이므로 Notion 재수집이 이 항목을 건드리지 않는다
+ * (upsert 키가 `(source.type, source.id)` 다).
+ *
+ * 본문은 Notion 45건과 같은 4단 구조(개요/나의 역할/성과 및 결과/회고)를
+ * 지킨다 — 상세 화면이 그 구조를 전제로 조판한다.
+ */
+{
+  const p = path.join(IN, '..', 'content', 'projects-manual.json');
+  let manual = { projects: [] };
+  try {
+    manual = JSON.parse(readFileSync('content/projects-manual.json', 'utf8'));
+  } catch (err) {
+    warnings.push(`content/projects-manual.json 을 읽지 못했습니다: ${err.message}`);
+  }
+  void p;
+
+  for (const [i, m] of (manual.projects ?? []).entries()) {
+    if (!m.slug || !m.title) {
+      warnings.push(`손등록 프로젝트에 slug/title 이 없습니다 (${i}번째)`);
+      continue;
+    }
+    /**
+     * ⚠️ order 를 Notion 프로젝트와 같은 축에 둔다. 최신순 정렬이므로
+     * 기간이 겹치면 목록에서 뒤섞이는데, 그게 의도다 — 소속이 다를 뿐
+     * 시간순으로는 같은 줄에 있다.
+     */
+    const start = m.period?.start ? new Date(m.period.start) : null;
+    push({
+      kind: 'project',
+      slug: uniqueSlug(m.slug, usedSlugs, `manual-${i + 1}`),
+      title: m.title,
+      summary: m.summary ?? null,
+      body: m.body ?? null,
+      company: m.company ?? null,
+      role: m.role ?? null,
+      teamSize: m.teamSize ?? null,
+      contribution: m.contribution ?? null,
+      period: {
+        start,
+        end: m.period?.end ? new Date(m.period.end) : null,
+        label: m.period?.label ?? null,
+      },
+      techStack: m.techStack ?? [],
+      highlights: m.highlights ?? [],
+      links: m.links ?? [],
+      /** 이미 R2 에 올린 URL 이다 → pnpm shots:upload */
+      images: m.images ?? [],
+      featured: Boolean(m.featured),
+      /**
+       * order 는 아래 정렬 단계에서 다시 매긴다. Notion 것과 섞어 최신순으로
+       * 세워야 하므로 여기서 확정하지 않는다.
+       */
+      order: 0,
+      visibility: 'public',
+      source: { type: 'manual', id: `project:${m.slug}` },
+    });
+  }
+  const n = (manual.projects ?? []).length;
+  if (n) console.log(`손등록 프로젝트 ${n}건 (content/projects-manual.json)\n`);
+}
+
+/**
+ * 프로젝트 `order` 를 **전체 최신순으로 다시 매긴다.**
+ * Notion 것만 정렬해 두면 손등록 프로젝트가 목록 끝에 붙는다.
+ */
+{
+  const projects = docs.filter((d) => d.kind === 'project');
+  projects.sort((a, b) => {
+    const sa = a.period?.start ? new Date(a.period.start).getTime() : 0;
+    const sb = b.period?.start ? new Date(b.period.start).getTime() : 0;
+    return sb - sa;
+  });
+  projects.forEach((d, i) => {
+    d.order = i;
+  });
+}
+
 /* ══════════════ 4. 이력서 — 학력·자격증·활동·병역·에세이 ═════ */
 
 const rLines = resume.split(/\r?\n/).map((l) => l.trim());
@@ -712,10 +792,17 @@ const dirty = docs.filter((d) => d.body && /^#{1,6}[^\n]*\*/m.test(d.body));
 console.log(`\n  본문 헤딩에 남은 * 기호  ${dirty.length}건${dirty.length ? ' ← 정리 규칙 확인 필요' : ' ✓'}`);
 if (dirty.length) for (const d of dirty.slice(0, 5)) console.log(`    ${d.title.slice(0, 30)}`);
 
-const featuredDocs = (byKind.project ?? []).filter((d) => d.featured);
+/**
+ * 리포트도 `order` 로 정렬한다. 삽입 순서로 찍으면 손등록 프로젝트가 목록
+ * 끝에 붙어 **DB 순서와 다르게 보인다** — 실제로 오해했다.
+ */
+const projectsInOrder = [...(byKind.project ?? [])].sort((a, b) => a.order - b.order);
+const featuredDocs = projectsInOrder.filter((d) => d.featured);
 console.log(`\n─── 대표 프로젝트 ${featuredDocs.length}건 (/resume 에 싣는 것) ───`);
 for (const d of featuredDocs) {
-  const why = FEATURED.find((f) => d.title.includes(f.match))?.why ?? '';
+  const why =
+    FEATURED.find((f) => d.title.includes(f.match))?.why ??
+    (d.source.type === 'manual' ? '손등록 (content/projects-manual.json)' : '');
   console.log(`  ${(d.period.label || '-').padEnd(19)} ${d.slug.padEnd(22)} ${why}`);
 }
 const notFound = FEATURED.filter(
