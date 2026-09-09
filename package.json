@@ -15,7 +15,8 @@
     "ingest": "node scripts/ingest.mjs",
     "r2:check": "node scripts/check-r2.mjs",
     "images:migrate": "node scripts/migrate-images.mjs",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "warm": "node scripts/warm-answers.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",

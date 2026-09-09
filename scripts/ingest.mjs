@@ -426,6 +426,17 @@ const aboutFromResume = (() => {
   return (first ?? '').trim();
 })();
 
+/** 이력서 첫 줄의 `Contact : … / …` 에서 이메일을 뽑는다 */
+const contactFromResume = (() => {
+  const text = read('resume.txt');
+  const m = /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/.exec(text);
+  if (!m) {
+    warnings.push('이력서에서 이메일을 찾지 못했습니다');
+    return [];
+  }
+  return [{ label: `Email · ${m[1]}`, url: `mailto:${m[1]}` }];
+})();
+
 push({
   kind: 'profile',
   slug: uniqueSlug('profile', usedSlugs),
@@ -439,11 +450,23 @@ push({
    * MBTI 검사 사이트(16personalities)와 전 직장 사이트(qoo10 · xorbis,
    * 회사 로고 이미지의 캡션에서 온 것)까지 "장민의 링크" 로 나온다.
    */
-  links: extractLinks(root.markdown).filter(
-    (l) =>
-      !/notion\.(so|com)/.test(l.url) &&
-      !/16personalities|qoo10|xorbis|tmon/.test(l.url),
-  ),
+  links: [
+    /**
+     * 이메일을 **맨 앞에** 둔다. 채용 담당자가 실제로 쓰는 연락 수단이고,
+     * 이게 없으면 챗봇이 "이력서에 기재된 이메일로 연락 주세요" 처럼
+     * 정작 주소를 못 주는 답을 한다(실제로 그랬다).
+     *
+     * 휴대폰 번호는 넣지 않는다 — 2026-09-08 "모두 공개" 지시가 있었지만,
+     * 공개 데이터로 두는 것과 **챗봇이 먼저 읊는 것**은 다르다. 번호가
+     * 필요하면 이메일로 물어보는 흐름이 맞다. 프롬프트에도 같은 규칙이 있다.
+     */
+    ...contactFromResume,
+    ...extractLinks(root.markdown).filter(
+      (l) =>
+        !/notion\.(so|com)/.test(l.url) &&
+        !/16personalities|qoo10|xorbis|tmon/.test(l.url),
+    ),
+  ],
   images: [],
   order: 0,
   visibility: 'public',
