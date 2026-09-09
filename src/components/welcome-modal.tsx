@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { BrandMark } from '@/components/brand-mark';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { dismissWelcome, isWelcomeDismissed } from '@/lib/client-id';
@@ -54,9 +53,15 @@ export default function WelcomeModal({ trigger, autoOpen = false }: WelcomeModal
       variant="ghost"
       className="h-auto w-auto cursor-pointer rounded-2xl bg-white/30 p-3 shadow-lg backdrop-blur-lg hover:bg-white/60 focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
       onClick={() => setIsOpen(true)}
-      aria-label="jangmini 소개 열기"
+      aria-label="이 사이트 안내 열기"
     >
-      <BrandMark className="w-6 md:w-8" />
+      {/*
+        * ⚠️ 여기는 **정보 아이콘**이다. 브랜드 마크를 쓰면 안 된다.
+        * 랜딩에서 이 버튼이 "장" 마크로 보여, 안내를 여는 버튼인지 알 수
+        * 없었다(2026-09-09 사용자 지적). 얼굴/로고는 정체 표시이고,
+        * 이 자리는 **동작**을 알려야 하는 자리다.
+        */}
+      <Info className="text-accent-foreground h-6 w-6 md:h-8 md:w-8" />
     </Button>
   );
 

@@ -16,7 +16,6 @@ import {
   ChatBubbleMessage,
 } from '@/components/ui/chat/chat-bubble';
 import WelcomeModal from '@/components/welcome-modal';
-import { Info } from 'lucide-react';
 import HelperBoost from './HelperBoost';
 import { getClientId } from '@/lib/client-id';
 import { findSuggestion } from '@/lib/suggestions';
@@ -270,14 +269,12 @@ const Chat = () => {
   return (
     <div className="relative h-screen overflow-hidden">
       <div className="absolute top-6 right-6 z-51 flex items-center gap-1 md:right-8">
+        {/*
+          * 랜딩과 같은 순서·같은 모양이다 — 안내(i) · 로그인 · 메뉴.
+          * 원본은 여기만 커스텀 trigger 를 넘겨 랜딩과 생김새가 달랐다.
+          */}
+        <WelcomeModal />
         <ReaderLogin />
-        <WelcomeModal
-          trigger={
-            <div className="hover:bg-accent cursor-pointer rounded-2xl px-3 py-1.5">
-              <Info className="text-accent-foreground h-8" />
-            </div>
-          }
-        />
         <SiteMenu />
       </div>
 

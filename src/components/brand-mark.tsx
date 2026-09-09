@@ -1,122 +1,61 @@
 /**
  * 브랜드 마크와 히어로 아바타.
  *
- * 원작자의 메모지 이미지·영상을 지운 자리를 메운다. 사진을 넣기 전까지 화면이
- * 깨져 보이지 않게 **인라인 SVG** 로 그린다 — 파일에 의존하지 않으므로
- * public/ 이 비어 있어도 정상 렌더링된다.
+ * 둘 다 사용자가 준 메모지를 쓴다 (2026-09-09 지시 — 그전에는 작은 자리에
+ * 그라디언트 "장" 마크를 썼다).
  *
- * 색은 새로 만들지 않고 랜딩의 빠른 질문 버튼이 쓰는 다섯 색을 그대로 쓴다
- * (`src/app/page.tsx` 의 questionConfig). 원본 디자인 언어를 유지하기 위해서다.
+ *   public/avatar.png        눈 뜬 표정 — 히어로
+ *   public/avatar-wink.png   윙크 — 작은 마크, 챗에서 답변 중일 때
  *
- * ## 실제 사진으로 바꿀 때
- *
- * `public/avatar.png` 를 넣고 HeroAvatar 의 `src` 를 주면 그 이미지가 쓰인다.
- * 주지 않으면 SVG 로 남는다 — 파일이 없을 때 next/image 가 터지는 것을 피하려고
- * **존재 여부를 런타임에 추측하지 않고 호출자가 명시**하게 했다.
+ * 파비콘·애플 아이콘·OG 도 같은 이미지에서 만든다 → `pnpm icons`
  */
 import Image from 'next/image';
 
-/** 랜딩 빠른 질문 버튼과 같은 색 */
-const BRAND_COLORS = ['#329696', '#3E9858', '#856ED9', '#B95F9D', '#C19433'] as const;
+export const AVATAR_SRC = '/avatar.png';
+export const AVATAR_WINK_SRC = '/avatar-wink.png';
 
 /**
- * 작은 브랜드 마크. 헤더·모달 트리거처럼 16~40px 로 쓰이는 자리다.
- * 이 크기에서는 메모지 얼굴이 뭉개지므로 **그라디언트 마크**를 쓴다.
+ * 작은 브랜드 마크. 헤더·문서 사이드바처럼 24~40px 로 쓰인다.
+ *
+ * 이 크기에서 얼굴은 또렷하지 않지만, 브랜드가 사람이면 얼굴이 알아보기
+ * 쉬운 표식이다. 파비콘도 같은 이미지라 탭·문서·챗이 한 얼굴로 이어진다.
+ *
+ * `next/image` 대신 `<img>` 를 쓴다 — 24px 짜리에 최적화 요청을 보내면
+ * 요청만 늘고 얻는 것이 없다. `public/` 의 정적 파일이라 그대로 서빙된다.
  */
 export function BrandMark({ className = 'w-6 md:w-8' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 48 48" className={className} role="img" aria-label="jangmini">
-      <defs>
-        <linearGradient id="jm-mark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={BRAND_COLORS[2]} />
-          <stop offset="55%" stopColor={BRAND_COLORS[0]} />
-          <stop offset="100%" stopColor={BRAND_COLORS[4]} />
-        </linearGradient>
-      </defs>
-      <rect x="1" y="1" width="46" height="46" rx="14" fill="url(#jm-mark)" />
-      <text
-        x="24"
-        y="24"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill="#fff"
-        fontSize="20"
-        fontWeight="700"
-        fontFamily="ui-sans-serif, system-ui, sans-serif"
-      >
-        장
-      </text>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={AVATAR_WINK_SRC}
+      alt="jangmini"
+      className={`${className} aspect-square object-contain`}
+      loading="lazy"
+      decoding="async"
+    />
   );
 }
 
 /**
- * 히어로 자리. 원본 메모지와 같은 크기·위치를 차지한다.
+ * 히어로 자리.
  *
- * `src` 를 주면 사진, 없으면 SVG 아바타.
+ * `src` 를 주면 그것을 쓴다. 기본값은 눈 뜬 표정이다.
  */
-/** 기본 아바타. public/avatar.png 는 사용자가 준 메모지다 */
-export const AVATAR_SRC = '/avatar.png';
-
 export function HeroAvatar({ src = AVATAR_SRC, alt = '장민' }: { src?: string; alt?: string }) {
-  if (src) {
-    return (
-      <div className="relative z-10 h-52 w-48 overflow-hidden sm:h-72 sm:w-72">
-        {/*
-          * 메모지는 사방에 투명 여백이 있고 배경도 투명하다. rounded-full +
-          * object-cover 로 두면 얼굴 옆머리가 잘리므로 contain 으로 담는다.
-          */}
-        <Image
-          src={src}
-          alt={alt}
-          width={480}
-          height={480}
-          priority
-          className="h-full w-full object-contain"
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="relative z-10 flex h-52 w-48 items-center justify-center sm:h-72 sm:w-72">
-      <svg
-        viewBox="0 0 200 200"
-        className="h-full w-full"
-        role="img"
-        aria-label={alt}
-      >
-        <defs>
-          <linearGradient id="jm-hero" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={BRAND_COLORS[2]} stopOpacity="0.95" />
-            <stop offset="50%" stopColor={BRAND_COLORS[0]} stopOpacity="0.95" />
-            <stop offset="100%" stopColor={BRAND_COLORS[4]} stopOpacity="0.95" />
-          </linearGradient>
-          {/**
-           * 원본 메모지가 부드러운 일러스트였으므로 딱딱한 원이 되지 않게
-           * 바깥에 옅은 링을 한 겹 둔다.
-           */}
-          <radialGradient id="jm-halo" cx="50%" cy="50%" r="50%">
-            <stop offset="70%" stopColor={BRAND_COLORS[0]} stopOpacity="0" />
-            <stop offset="100%" stopColor={BRAND_COLORS[0]} stopOpacity="0.14" />
-          </radialGradient>
-        </defs>
-        <circle cx="100" cy="100" r="98" fill="url(#jm-halo)" />
-        <circle cx="100" cy="100" r="72" fill="url(#jm-hero)" />
-        <text
-          x="100"
-          y="102"
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="#fff"
-          fontSize="56"
-          fontWeight="700"
-          letterSpacing="2"
-          fontFamily="ui-sans-serif, system-ui, sans-serif"
-        >
-          장민
-        </text>
-      </svg>
+    <div className="relative z-10 h-52 w-48 overflow-hidden sm:h-72 sm:w-72">
+      {/*
+       * 메모지는 사방에 투명 여백이 있고 배경도 투명하다. rounded-full +
+       * object-cover 로 두면 얼굴 옆머리가 잘리므로 contain 으로 담는다.
+       */}
+      <Image
+        src={src}
+        alt={alt}
+        width={480}
+        height={480}
+        priority
+        className="h-full w-full object-contain"
+      />
     </div>
   );
 }

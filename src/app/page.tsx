@@ -79,8 +79,9 @@ export default function Home() {
        * 없었다 (챗 전용 한 화면 구조였다). 문서 페이지가 생겼으므로 여기서 연다.
        */}
       <div className="absolute top-6 right-6 z-50 flex items-center gap-2 md:right-8">
-        <ReaderLogin />
+        {/* 순서 고정 — 안내(i) · 로그인 · 메뉴 (2026-09-09 사용자 지시) */}
         <WelcomeModal autoOpen />
+        <ReaderLogin />
         <SiteMenu />
       </div>
       {/* big blurred footer word */}
