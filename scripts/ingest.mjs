@@ -437,12 +437,32 @@ const contactFromResume = (() => {
   return [{ label: `Email · ${m[1]}`, url: `mailto:${m[1]}` }];
 })();
 
+/**
+ * 소개의 본문·소셜 링크를 손으로 덮어쓴다 — `content/profile-manual.json`.
+ *
+ * Notion 루트 문서는 **페이지 머리말**로 쓰인 글이라 포트폴리오의 소개
+ * 자리에는 맞지 않는다("반갑습니다! …" 와 인용 나열). 인스타그램도 계정이
+ * 세 개로 갈라져서 루트에서 뽑은 링크 하나로는 맞출 수 없다.
+ *
+ * 파일이 없으면 예전대로 Notion 에서 만든 것을 쓴다 — 없어도 깨지지 않는다.
+ */
+const profileManual = (() => {
+  try {
+    return JSON.parse(readFileSync('content/profile-manual.json', 'utf8'));
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      warnings.push(`content/profile-manual.json 을 읽지 못했습니다: ${err.message}`);
+    }
+    return {};
+  }
+})();
+
 push({
   kind: 'profile',
   slug: uniqueSlug('profile', usedSlugs),
   title: '장민',
   summary: 'Full Stack Developer',
-  body: [aboutFromResume, rootIntro].filter(Boolean).join('\n\n'),
+  body: profileManual.body ?? [aboutFromResume, rootIntro].filter(Boolean).join('\n\n'),
   techStack: [],
   highlights: [],
   /**
@@ -461,11 +481,16 @@ push({
      * 필요하면 이메일로 물어보는 흐름이 맞다. 프롬프트에도 같은 규칙이 있다.
      */
     ...contactFromResume,
-    ...extractLinks(root.markdown).filter(
-      (l) =>
-        !/notion\.(so|com)/.test(l.url) &&
-        !/16personalities|qoo10|xorbis|tmon/.test(l.url),
-    ),
+    /*
+      소셜 링크만 손등록으로 갈아낄 수 있다. **이메일은 갈아끼지 않는다** —
+      이력서 첫 줄에서 뽑는 것이 한 곳에서만 관리되는 값이다.
+    */
+    ...(profileManual.socialLinks ??
+      extractLinks(root.markdown).filter(
+        (l) =>
+          !/notion\.(so|com)/.test(l.url) &&
+          !/16personalities|qoo10|xorbis|tmon/.test(l.url),
+      )),
   ],
   images: [],
   order: 0,
@@ -536,14 +561,12 @@ if (expOrder === 0) warnings.push('루트 페이지에서 경력 블록을 찾�
  * 지킨다 — 상세 화면이 그 구조를 전제로 조판한다.
  */
 {
-  const p = path.join(IN, '..', 'content', 'projects-manual.json');
   let manual = { projects: [] };
   try {
     manual = JSON.parse(readFileSync('content/projects-manual.json', 'utf8'));
   } catch (err) {
     warnings.push(`content/projects-manual.json 을 읽지 못했습니다: ${err.message}`);
   }
-  void p;
 
   for (const [i, m] of (manual.projects ?? []).entries()) {
     if (!m.slug || !m.title) {
