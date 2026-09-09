@@ -18,7 +18,10 @@ import {
 import WelcomeModal from '@/components/welcome-modal';
 import { Info } from 'lucide-react';
 import HelperBoost from './HelperBoost';
+import { getClientId } from '@/lib/client-id';
+import { findSuggestion } from '@/lib/suggestions';
 import { SiteMenu } from '@/components/site-menu';
+import { ReaderLogin } from '@/components/reader-login';
 
 // ClientOnly component for client-side rendering
 //@ts-ignore
@@ -39,14 +42,13 @@ const ClientOnly = ({ children }) => {
 // Define Avatar component props interface
 interface AvatarProps {
   hasActiveTool: boolean;
-  videoRef: React.RefObject<HTMLVideoElement | null>;
   isTalking: boolean;
 }
 
 // Dynamic import of Avatar component
 const Avatar = dynamic<AvatarProps>(
   () =>
-    Promise.resolve(({ hasActiveTool, videoRef, isTalking }: AvatarProps) => {
+    Promise.resolve(({ hasActiveTool, isTalking }: AvatarProps) => {
       // This function will only execute on the client
       const isIOS = () => {
         // Multiple detection methods
@@ -82,24 +84,19 @@ const Avatar = dynamic<AvatarProps>(
             className="relative cursor-pointer"
             onClick={() => (window.location.href = '/')}
           >
-            {isIOS() ? (
-              <img
-                src="/landing-memojis.png"
-                alt="iOS avatar"
-                className="h-full w-full scale-[1.8] object-contain"
-              />
-            ) : (
-              <video
-                ref={videoRef}
-                className="h-full w-full scale-[1.8] object-contain"
-                muted
-                playsInline
-                loop
-              >
-                <source src="/final_memojis.webm" type="video/webm" />
-                <source src="/final_memojis_ios.mp4" type="video/mp4" />
-              </video>
-            )}
+            {/*
+             * 원본은 여기서 메모지 **영상**(webm/mp4)을 재생하고, 답변 중일 때
+             * 재생·정지로 "말하는" 느낌을 줬다. 그 세 파일을 지웠으므로 404 를
+             * 네 번 받고 있었고, 영상의 play/pause 가 AbortError 를 냈다.
+             *
+             * 지금은 정지 이미지 두 장으로 같은 효과를 낸다 — 답변 중에는
+             * 윙크 버전으로 바꾼다. 사용자가 준 메모지가 두 표정이라 가능하다.
+             */}
+            <img
+              src={isTalking ? '/avatar-wink.png' : '/avatar.png'}
+              alt="장민"
+              className="h-full w-full object-contain"
+            />
           </div>
         </div>
       );
@@ -118,10 +115,21 @@ const MOTION_CONFIG = {
 };
 
 const Chat = () => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('query');
+  /**
+   * `?q=<key>` 는 추천 질문의 고정 key 다. FAQ·랜딩에서 이걸 보내면 캐시가
+   * 맞는다. `?query=<문장>` 은 자유 입력이라 캐시를 타지 않는다.
+   */
+  const initialKey = searchParams.get('q');
+  const initialSuggestion = initialKey ? findSuggestion(initialKey) : null;
   const [autoSubmitted, setAutoSubmitted] = useState(false);
+  /**
+   * localStorage 접근이 throw 할 수 있어(프라이빗 모드) 마운트 후에 읽는다.
+   * SSR 에서 읽으면 hydration 이 어긋난다.
+   */
+  const [clientId, setClientId] = useState('unknown');
+  useEffect(() => setClientId(getClientId()), []);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
 
@@ -138,30 +146,24 @@ const Chat = () => {
     addToolResult,
     append,
   } = useChat({
+    /**
+     * 익명 제한(L2)에 쓰는 식별자. 약한 값이라 서버가 IP 해시와 함께
+     * 본다 → src/lib/guard.ts
+     */
+    body: { clientId },
     onResponse: (response) => {
       if (response) {
         setLoadingSubmit(false);
         setIsTalking(true);
-        if (videoRef.current) {
-          videoRef.current.play().catch((error) => {
-            console.error('Failed to play video:', error);
-          });
-        }
       }
     },
     onFinish: () => {
       setLoadingSubmit(false);
       setIsTalking(false);
-      if (videoRef.current) {
-        videoRef.current.pause();
-      }
     },
     onError: (error) => {
       setLoadingSubmit(false);
       setIsTalking(false);
-      if (videoRef.current) {
-        videoRef.current.pause();
-      }
       console.error('Chat error:', error.message, error.cause);
       toast.error(`Error: ${error.message}`);
     },
@@ -213,44 +215,35 @@ const Chat = () => {
       )
   );
 
-  //@ts-ignore
-  const submitQuery = (query) => {
-    
+  /**
+   * `suggestionKey` 를 함께 보내면 서버가 **사전 생성 답변 캐시**를 조회한다
+   * (첫 턴에서만). 캐시가 맞으면 OpenAI 를 호출하지 않는다.
+   * 자유 입력은 key 가 없으므로 캐시를 타지 않는다 — 텍스트를 해시하면
+   * 거의 안 맞고 방문자가 캐시를 채울 수 있다 → src/lib/suggestions.ts
+   */
+  const submitQuery = (query: string, suggestionKey?: string) => {
     if (!query.trim() || isToolInProgress) return;
-    
+
     setLoadingSubmit(true);
-    append({
-      role: 'user',
-      content: query,
-    });
+    append(
+      { role: 'user', content: query },
+      suggestionKey ? { body: { clientId, suggestionKey } } : undefined
+    );
   };
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.loop = true;
-      videoRef.current.muted = true;
-      videoRef.current.playsInline = true;
-      videoRef.current.pause();
-    }
     
-    if (initialQuery && !autoSubmitted) {
+    if (initialSuggestion && !autoSubmitted) {
+      setAutoSubmitted(true);
+      setInput('');
+      submitQuery(initialSuggestion.question, initialSuggestion.key);
+    } else if (initialQuery && !autoSubmitted) {
       setAutoSubmitted(true);
       setInput('');
       submitQuery(initialQuery);
     }
-  }, [initialQuery, autoSubmitted]);
+  }, [initialQuery, initialSuggestion, autoSubmitted]);
 
-  useEffect(() => {
-    if (videoRef.current) {
-      if (isTalking) {
-        videoRef.current.play().catch((error) => {
-          console.error('Failed to play video:', error);
-        });
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isTalking]);
 
   //@ts-ignore
   const onSubmit = (e) => {
@@ -265,9 +258,6 @@ const Chat = () => {
     stop();
     setLoadingSubmit(false);
     setIsTalking(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-    }
   };
 
   // Check if this is the initial empty state (no messages)
@@ -280,6 +270,7 @@ const Chat = () => {
   return (
     <div className="relative h-screen overflow-hidden">
       <div className="absolute top-6 right-6 z-51 flex items-center gap-1 md:right-8">
+        <ReaderLogin />
         <WelcomeModal
           trigger={
             <div className="hover:bg-accent cursor-pointer rounded-2xl px-3 py-1.5">
@@ -305,7 +296,6 @@ const Chat = () => {
             <ClientOnly>
               <Avatar
                 hasActiveTool={hasActiveTool}
-                videoRef={videoRef}
                 isTalking={isTalking}
               />
             </ClientOnly>

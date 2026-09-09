@@ -30,7 +30,8 @@ import { useState } from 'react';
 import { Drawer } from 'vaul';
 
 interface HelperBoostProps {
-  submitQuery?: (query: string) => void;
+  /** 두 번째 인자는 추천 질문의 고정 key — 답변 캐시 조회에 쓰인다 */
+  submitQuery?: (query: string, suggestionKey?: string) => void;
   setInput?: (value: string) => void;
   hasReachedLimit?: boolean;
 }
@@ -47,7 +48,7 @@ const questionConfig = [
   { key: 'contact', label: '연락', color: '#C19433', icon: UserRoundSearch },
 ];
 
-const specialQuestions = PRIMARY_SUGGESTIONS.map((s) => s.question);
+const specialQuestions = PRIMARY_SUGGESTIONS.map((s) => ({ key: s.key, text: s.question }));
 
 const CATEGORY_ICONS: Record<string, typeof UserSearch> = {
   me: UserSearch,
@@ -57,11 +58,15 @@ const CATEGORY_ICONS: Record<string, typeof UserSearch> = {
   contact: MailIcon,
 };
 
+/**
+ * 드로어의 질문도 **key 를 들고 다닌다.** 문장만 넘기면 캐시를 못 맞힌다
+ * (서버는 고정 key 로만 캐시를 조회한다).
+ */
 const questionsByCategory = SUGGESTIONS_BY_CATEGORY.map((c) => ({
   id: c.category,
   name: c.label,
   icon: CATEGORY_ICONS[c.category] ?? UserSearch,
-  questions: c.items.map((i) => i.question),
+  questions: c.items.map((i) => ({ key: i.key, text: i.question })),
 }));
 
 // Animated Chevron component
@@ -94,13 +99,15 @@ export default function HelperBoost({
 
   const handleQuestionClick = (questionKey: string) => {
     if (submitQuery) {
-      submitQuery(findSuggestion(questionKey)?.question ?? questionKey);
+      /** key 를 함께 넘겨 사전 생성 답변 캐시를 맞힌다 */
+      submitQuery(findSuggestion(questionKey)?.question ?? questionKey, questionKey);
     }
   };
 
-  const handleDrawerQuestionClick = (question: string) => {
+  const handleDrawerQuestionClick = (item: { key: string; text: string }) => {
     if (submitQuery) {
-      submitQuery(question);
+      /** 드로어에서도 key 를 넘긴다 — 문장만 넘기면 캐시를 못 맞힌다 */
+      submitQuery(item.text, item.key);
     }
     setOpen(false);
   };
@@ -128,7 +135,7 @@ export default function HelperBoost({
               {isVisible ? (
                 <>
                   <ChevronDown size={14} />
-                  Hide quick questions
+                  추천 질문 숨기기
                 </>
               ) : (
                 <>
@@ -236,8 +243,8 @@ export default function HelperBoost({
 interface CategorySectionProps {
   name: string;
   Icon: React.ElementType;
-  questions: string[];
-  onQuestionClick: (question: string) => void;
+  questions: { key: string; text: string }[];
+  onQuestionClick: (item: { key: string; text: string }) => void;
 }
 
 function CategorySection({
@@ -258,12 +265,12 @@ function CategorySection({
       <Separator className="my-4" />
 
       <div className="space-y-3">
-        {questions.map((question, index) => (
+        {questions.map((item) => (
           <QuestionItem
-            key={index}
-            question={question}
-            onClick={() => onQuestionClick(question)}
-            isSpecial={specialQuestions.includes(question)}
+            key={item.key}
+            question={item.text}
+            onClick={() => onQuestionClick(item)}
+            isSpecial={specialQuestions.some((s) => s.key === item.key)}
           />
         ))}
       </div>

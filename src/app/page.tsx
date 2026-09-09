@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import WelcomeModal from '@/components/welcome-modal';
 import { HeroAvatar } from '@/components/brand-mark';
 import { SiteMenu } from '@/components/site-menu';
-import { findSuggestion } from '@/lib/suggestions';
+import { ReaderLogin } from '@/components/reader-login';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -41,6 +41,13 @@ export default function Home() {
   const goToChat = (query: string) =>
     router.push(`/chat?query=${encodeURIComponent(query)}`);
 
+  /**
+   * 추천 질문은 **문장이 아니라 key** 를 보낸다. 서버가 고정 key 로만 사전
+   * 생성 답변 캐시를 조회하므로, 문장으로 보내면 캐시가 안 맞고 매번
+   * OpenAI 를 호출한다 → src/lib/suggestions.ts
+   */
+  const goToSuggestion = (key: string) => router.push(`/chat?q=${encodeURIComponent(key)}`);
+
   /* hero animations (unchanged) */
   const topElementVariants = {
     hidden: { opacity: 0, y: -60 },
@@ -72,7 +79,8 @@ export default function Home() {
        * 없었다 (챗 전용 한 화면 구조였다). 문서 페이지가 생겼으므로 여기서 연다.
        */}
       <div className="absolute top-6 right-6 z-50 flex items-center gap-2 md:right-8">
-        <WelcomeModal />
+        <ReaderLogin />
+        <WelcomeModal autoOpen />
         <SiteMenu />
       </div>
       {/* big blurred footer word */}
@@ -143,7 +151,7 @@ export default function Home() {
           {questionConfig.map(({ key, label, color, icon: Icon }) => (
             <Button
               key={key}
-              onClick={() => goToChat(findSuggestion(key)?.question ?? label)}
+              onClick={() => goToSuggestion(key)}
               variant="outline"
               className="border-border hover:bg-border/30 aspect-square w-full cursor-pointer rounded-2xl border bg-white/30 py-8 shadow-none backdrop-blur-lg active:scale-95 md:p-10"
             >

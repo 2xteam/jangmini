@@ -12,7 +12,8 @@ import {
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { dismissWelcome, isWelcomeDismissed } from '@/lib/client-id';
 
 /**
  * 첫 진입 안내 모달.
@@ -28,10 +29,25 @@ import { useState } from 'react';
  */
 interface WelcomeModalProps {
   trigger?: React.ReactNode;
+  /** 첫 방문이면 자동으로 띄운다. 랜딩에서만 켠다 */
+  autoOpen?: boolean;
 }
 
-export default function WelcomeModal({ trigger }: WelcomeModalProps) {
+export default function WelcomeModal({ trigger, autoOpen = false }: WelcomeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  /**
+   * 첫 방문 자동 표시. **마운트 후에** 판단한다 — localStorage 는 SSR 에
+   * 없고, 접근 자체가 throw 할 수 있다(프라이빗 모드) → src/lib/client-id.ts
+   */
+  useEffect(() => {
+    if (autoOpen && !isWelcomeDismissed()) setIsOpen(true);
+  }, [autoOpen]);
+
+  const closeForever = () => {
+    dismissWelcome();
+    setIsOpen(false);
+  };
 
   const defaultTrigger = (
     <Button
@@ -116,6 +132,17 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
               >
                 무엇을 물어볼 수 있는지 보기 →
               </Link>
+              {/*
+               * "다시 보지 않기" 를 눌러도 우상단 버튼으로 언제든 다시 열 수
+               * 있다 — 그래서 이 버튼이 정보를 영구히 감추지 않는다.
+               */}
+              <button
+                type="button"
+                onClick={closeForever}
+                className="text-muted-foreground/70 hover:text-muted-foreground text-xs underline underline-offset-4"
+              >
+                다시 보지 않기
+              </button>
             </div>
           </motion.div>
         </DialogContent>

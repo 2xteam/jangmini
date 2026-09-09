@@ -64,11 +64,12 @@ export default async function FaqPage() {
                  * 랜딩(`/`)은 query 를 읽지 않으므로 `/?query=` 로 보내면
                  * 아무 일도 일어나지 않는다.
                  *
-                 * Phase 5 에서 `?q=<key>` 로 바꿔 캐시를 맞힌다 — 자유 입력이
-                 * 아니라 고정 key 로 조회해야 캐시가 맞는다.
+                 * `?q=<key>` 로 보낸다 — 서버가 고정 key 로만 사전 생성
+                 * 답변 캐시를 조회한다. 문장으로 보내면 캐시가 안 맞고
+                 * 매번 OpenAI 를 호출한다.
                  */}
                 <Link
-                  href={`/chat?query=${encodeURIComponent(s.question)}`}
+                  href={`/chat?q=${encodeURIComponent(s.key)}`}
                   className="hover:bg-accent/50 flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm transition-colors"
                 >
                   <span>{s.question}</span>
