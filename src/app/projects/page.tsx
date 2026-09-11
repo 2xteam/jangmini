@@ -74,7 +74,12 @@ export default async function ProjectsPage({
           </Link>
         </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 [&:hover>a:not(:hover)]:opacity-50 sm:grid-cols-2">
+          {/*
+            호버한 칸만 남기고 나머지를 흐리게 — laplaya.studio 에서 가져왔다.
+            46건이 균일하게 깔려 있어 눈이 머물 곳이 없었다. 포인터를 올린
+            자리에 초점이 생긴다. 터치 화면에는 호버가 없으니 아무 일도 없다.
+          */}
           {projects.map((p) => (
             <ProjectCard key={p.slug} p={p} />
           ))}

@@ -58,7 +58,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             ].map(([label, value]) =>
               value ? (
                 <div key={label as string}>
-                  <dt className="text-muted-foreground text-xs">{label}</dt>
+                  <dt className="text-muted-foreground text-[11px] tracking-[0.08em] uppercase">
+                    {label}
+                  </dt>
                   <dd className="mt-0.5">{value}</dd>
                 </div>
               ) : null,
@@ -108,7 +110,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
        * 회고는 접지 않고 펼쳐 둔다. "무엇을 만들었다" 보다 "무엇을 배웠다" 가
        * 판단력을 보여주는데, 대부분의 포트폴리오에는 없는 부분이다.
        */}
-      <article className="prose-headings:font-semibold max-w-none text-sm leading-relaxed [&_h2]:mt-8 [&_h2]:mb-2 [&_h2]:border-t [&_h2]:pt-6 [&_h2]:text-lg [&_h2:first-child]:mt-0 [&_h2:first-child]:border-t-0 [&_h2:first-child]:pt-0 [&_h3]:mt-4 [&_h3]:mb-1.5 [&_h3]:font-semibold [&_li]:my-0.5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5">
+      {/*
+        본문 폭을 46rem 으로 묶는다. 화면 폭을 다 쓰면 한글 한 줄이 60자를
+        넘어가서, 줄을 바꿀 때마다 눈이 처음을 놓친다.
+
+        절 제목(h2)을 본문보다 확실히 키운다 — 예전에는 18px 대 14px 이라
+        개요/역할/성과/회고 네 덩어리가 한 덩어리로 보였다.
+      */}
+      <article className="max-w-[46rem] text-[15px] leading-[1.85] [&_h2]:mt-12 [&_h2]:mb-3 [&_h2]:border-t [&_h2]:pt-8 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:tracking-[-0.02em] [&_h2:first-child]:mt-0 [&_h2:first-child]:border-t-0 [&_h2:first-child]:pt-0 [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_li]:my-1 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-3 [&_strong]:font-semibold [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5">
         <Markdown remarkPlugins={[remarkGfm]}>{p.body ?? ''}</Markdown>
       </article>
 

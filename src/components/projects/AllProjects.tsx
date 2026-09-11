@@ -37,11 +37,21 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.19, 1, 0.22, 1] } },
 };
 
+/**
+ * 목록 한 칸.
+ *
+ * **대표 프로젝트를 나머지와 다르게 조판한다.** 46건이 전부 같은 카드로
+ * 나열되면 8건을 골라 둔 의미가 화면에 나타나지 않는다. 테두리를 하나 더
+ * 두르는 대신 — 그러면 카드가 더 무거워질 뿐이다 — 라벨과 제목 크기로
+ * 구분한다.
+ */
 export function ProjectCard({ p }: { p: ProjectSummary }) {
   return (
     <Link
       href={`/projects/${p.slug}`}
-      className="hover:bg-accent/50 group block rounded-2xl border p-4 transition-colors"
+      className={`hover:bg-accent/50 group block rounded-2xl border p-4 transition-[background-color,opacity,border-color] ${
+        p.featured ? 'border-foreground/20' : ''
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -51,7 +61,18 @@ export function ProjectCard({ p }: { p: ProjectSummary }) {
             {/* 기여도는 있을 때만. 없는 값을 0 으로 보이게 하지 않는다 */}
             {p.contribution != null && <span>· 기여도 {Math.round(p.contribution * 100)}%</span>}
           </div>
-          <h3 className="mt-1 truncate font-semibold group-hover:underline">{p.title}</h3>
+          {p.featured && (
+            <p className="text-brand mt-1.5 text-[10.5px] font-semibold tracking-[0.12em] uppercase">
+              대표
+            </p>
+          )}
+          <h3
+            className={`mt-1 truncate font-semibold group-hover:underline ${
+              p.featured ? 'text-base' : 'text-[15px]'
+            }`}
+          >
+            {p.title}
+          </h3>
           {p.summary && (
             <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{p.summary}</p>
           )}

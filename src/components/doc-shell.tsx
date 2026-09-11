@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BrandMark } from '@/components/brand-mark';
+import { DocNav } from '@/components/doc-nav';
 import { ScrollTop } from '@/components/scroll-top';
 
 /**
@@ -13,12 +14,6 @@ import { ScrollTop } from '@/components/scroll-top';
  * 흐른다. 다만 색·타이포는 원본(toukoum) 것을 그대로 쓴다. 둘을 섞으면
  * 어느 쪽도 아니게 된다.
  */
-
-const NAV = [
-  { href: '/resume', label: '이력서' },
-  { href: '/projects', label: '프로젝트' },
-  { href: '/faq', label: 'FAQ' },
-];
 
 export function DocShell({
   title,
@@ -52,23 +47,7 @@ export function DocShell({
           </Link>
           <p className="text-muted-foreground mt-1 text-sm">Full Stack Developer</p>
 
-          <nav className="mt-6 flex gap-4 text-sm md:flex-col md:gap-2">
-            {NAV.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {n.label}
-              </Link>
-            ))}
-            <Link
-              href="/chat"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              AI에게 묻기
-            </Link>
-          </nav>
+          <DocNav />
 
           {aside && <div className="mt-6">{aside}</div>}
         </aside>
@@ -84,9 +63,19 @@ export function DocShell({
               {backTo.label}
             </Link>
           )}
-          <h1 className="text-3xl font-bold md:text-4xl">{title}</h1>
-          {lead && <p className="text-muted-foreground mt-2 text-sm md:text-base">{lead}</p>}
-          <div className="mt-8">{children}</div>
+          {/*
+            타입 스케일 — 예전에는 제목과 본문 두 단계뿐이라 화면이 평평했다.
+            display / lead / 절 제목 / 본문 / 라벨 다섯 단계로 벌린다.
+          */}
+          <h1 className="text-4xl leading-[1.15] font-bold tracking-[-0.03em] text-balance md:text-5xl">
+            {title}
+          </h1>
+          {lead && (
+            <p className="text-muted-foreground mt-3 max-w-[46rem] text-base leading-[1.8] md:text-lg">
+              {lead}
+            </p>
+          )}
+          <div className="mt-10">{children}</div>
         </main>
       </div>
 
@@ -112,10 +101,17 @@ export function DocSection({
   children: React.ReactNode;
 }) {
   return (
-    <section id={`s-${no}`} className="scroll-mt-16 border-t py-8 first:border-t-0 first:pt-0">
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <h2 className="flex items-baseline gap-3 text-lg font-semibold">
-          <span className="text-muted-foreground text-sm tabular-nums">{no}</span>
+    <section id={`s-${no}`} className="scroll-mt-16 border-t py-10 first:border-t-0 first:pt-0">
+      <div className="mb-5 flex items-baseline justify-between gap-3">
+        {/*
+          절 번호에 강조색을 준다. 이 사이트에서 색을 쓰는 네 자리 중 하나다
+          (절 번호 · 현재 위치 · 대표 표시 · 돌아가기). 번호가 실제 순서를
+          뜻하므로 — 01 소개부터 05까지 읽는 순서다 — 장식이 아니다.
+        */}
+        <h2 className="flex items-baseline gap-3 text-xl font-bold tracking-[-0.02em] md:text-2xl">
+          <span className="text-brand text-xs font-semibold tracking-[0.12em] tabular-nums">
+            {no}
+          </span>
           {title}
         </h2>
         {action}

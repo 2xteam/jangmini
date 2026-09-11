@@ -65,7 +65,8 @@ export default async function ResumePage() {
       }
     >
       <DocSection no="01" title="소개">
-        <div className="space-y-3 text-sm leading-relaxed">
+        {/* 폭을 46rem 으로 묶는다 — 화면 폭을 다 쓰면 한 줄이 너무 길다 */}
+        <div className="max-w-[46rem] space-y-4 text-[15px] leading-[1.85]">
           {about.slice(0, 4).map((p, i) => (
             <p key={i}>{p}</p>
           ))}
@@ -82,7 +83,7 @@ export default async function ResumePage() {
               </div>
               <h3 className="mt-0.5 font-semibold">{e.title}</h3>
               {(e.highlights ?? []).length > 0 && (
-                <ul className="text-muted-foreground mt-1.5 list-disc space-y-0.5 pl-4 text-sm">
+                <ul className="text-muted-foreground mt-2 max-w-[46rem] list-disc space-y-1 pl-4 text-sm leading-[1.8]">
                   {e.highlights.map((h, i) => (
                     <li key={i}>{h}</li>
                   ))}
