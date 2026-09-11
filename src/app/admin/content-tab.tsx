@@ -14,6 +14,10 @@ import type { FieldSpec } from '@/lib/overrides';
  *
  * 왼쪽이 목록, 오른쪽이 편집이다. 102건을 한 화면에 펼치면 무엇을 고치는
  * 중인지 잃어버린다.
+ *
+ * **종류를 칩으로 꺼내 둔다.** 셀렉트에 넣으면 열어 보기 전에는 무엇이
+ * 몇 건인지 알 수 없다. 종류마다 2차 분류가 다시 붙는다 — 기술은 노션의
+ * 분류(8종), 활동도 분류, 프로젝트 46건은 소속이 실제 구분선이다.
  */
 
 type Row = {
@@ -64,10 +68,42 @@ function toText(spec: FieldSpec, v: unknown): string {
   return String(v);
 }
 
+/** 목록에 나오는 순서. 자주 고치는 것부터 */
+const KIND_ORDER = ['project', 'experience', 'skill', 'profile', 'activity', 'essay', 'education', 'certificate'];
+
+const total0 = (g: { n: number }[]) => g.reduce((a, b) => a + b.n, 0);
+
+function Chip({
+  on,
+  onClick,
+  label,
+  n,
+}: {
+  on: boolean;
+  onClick: () => void;
+  label: string;
+  n: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+        on ? 'bg-foreground text-background border-foreground' : 'hover:bg-accent'
+      }`}
+    >
+      {label} <span className="opacity-60 tabular-nums">{n}</span>
+    </button>
+  );
+}
+
 export function ContentTab() {
   const [rows, setRows] = useState<Row[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [kind, setKind] = useState('');
+  const [group, setGroup] = useState('');
+  const [groups, setGroups] = useState<{ value: string; label: string; n: number }[]>([]);
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -76,14 +112,16 @@ export function ContentTab() {
     try {
       const p = new URLSearchParams();
       if (kind) p.set('kind', kind);
+      if (group) p.set('group', group);
       if (q.trim()) p.set('q', q.trim());
       const d = await api(`/api/admin/content?${p}`);
       setRows(d.rows);
       setCounts(d.counts);
+      setGroups(d.groups ?? []);
     } catch (e) {
       setErr((e as Error).message);
     }
-  }, [kind, q]);
+  }, [kind, group, q]);
 
   useEffect(() => {
     void load();
@@ -91,9 +129,45 @@ export function ContentTab() {
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
+  /** 종류를 바꾸면 2차 선택은 의미가 없어진다 — 같이 비운다 */
+  const pick = (k: string) => {
+    setKind(k);
+    setGroup('');
+  };
+
   return (
     <div className="space-y-4">
       {err && <p className="text-sm text-red-600">{err}</p>}
+
+      {/* 1차 — 종류 */}
+      <div className="flex flex-wrap gap-1.5">
+        <Chip on={!kind} onClick={() => pick('')} label="전체" n={total} />
+        {KIND_ORDER.filter((k) => counts[k]).map((k) => (
+          <Chip
+            key={k}
+            on={kind === k}
+            onClick={() => pick(k)}
+            label={KIND_LABEL[k] ?? k}
+            n={counts[k]}
+          />
+        ))}
+      </div>
+
+      {/* 2차 — 기술·활동은 분류, 프로젝트는 소속 */}
+      {groups.length > 1 && (
+        <div className="flex flex-wrap gap-1.5 border-l-2 pl-3">
+          <Chip on={!group} onClick={() => setGroup('')} label="전부" n={total0(groups)} />
+          {groups.map((g) => (
+            <Chip
+              key={g.value}
+              on={group === g.value}
+              onClick={() => setGroup(g.value)}
+              label={g.label}
+              n={g.n}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -102,18 +176,6 @@ export function ContentTab() {
           onChange={(e) => setQ(e.target.value)}
           className="w-56 rounded-xl border px-3 py-2 text-sm"
         />
-        <select
-          value={kind}
-          onChange={(e) => setKind(e.target.value)}
-          className="rounded-xl border px-3 py-2 text-sm"
-        >
-          <option value="">전체 ({total})</option>
-          {Object.entries(counts).map(([k, n]) => (
-            <option key={k} value={k}>
-              {KIND_LABEL[k] ?? k} ({n})
-            </option>
-          ))}
-        </select>
         <span className="text-muted-foreground text-xs">{rows.length}건</span>
       </div>
 

@@ -38,28 +38,62 @@ export function clientIp(req: Request): string {
   return req.headers.get('x-real-ip') ?? '0.0.0.0';
 }
 
+/** 우리 호스트인가 */
+function isOurHost(host: string): boolean {
+  return (
+    host === 'jangmini.myjane.co.kr' ||
+    host.endsWith('.vercel.app') ||
+    host.startsWith('localhost:') ||
+    host === 'localhost'
+  );
+}
+
 /**
- * L5 — 우리 사이트에서 온 요청인지 본다.
+ * 다른 사이트가 사용자의 쿠키를 업고 이 API 를 부르는 것을 막는다(CSRF).
  *
- * 헤더는 위조할 수 있으므로 **봇 차단 이상을 기대하지 않는다.** 다만
- * 스크립트로 엔드포인트를 직접 두드리는 경우는 대부분 여기서 걸린다.
- * 같은 출처의 fetch 에는 브라우저가 origin 을 붙인다.
+ * ⚠️ **같은 출처의 GET 에는 브라우저가 `Origin` 을 붙이지 않는다.**
+ * 규격이 그렇다 — `Origin` 은 교차 출처 요청과, 같은 출처라도 GET/HEAD 가
+ * 아닌 요청에만 붙는다.
+ *
+ * 예전에는 `Origin` 이 없으면 개발에서만 통과시켰다. 그래서 **운영의 admin
+ * 화면이 통째로 403** 이었다 — 네 탭이 모두 GET 으로 읽는데 그 GET 에는
+ * `Origin` 이 없으니, 로그인도 권한도 멀쩡한데 "허용되지 않은 요청입니다"
+ * 만 떴다. 로컬에서는 개발 예외로 통과해서 증상이 안 보였다(2026-09-11).
+ *
+ * 그래서 `Sec-Fetch-Site` 를 본다. 요즘 브라우저가 모든 요청에 붙인다.
+ *
+ *   same-origin  우리 화면이 우리 API 를 부른 것 — 통과
+ *   none         주소창·북마크 — 교차 출처가 아니므로 CSRF 가 아니다. 통과
+ *   same-site    `*.myjane.co.kr` 의 다른 앱 — **막는다.** 쿠키는 호스트
+ *                전용이지만 대상 호스트 기준으로 실려 나가므로 위험하다
+ *   cross-site   막는다
+ *
+ * 헤더가 아예 없는 옛 클라이언트는 `Referer` 로 한 번 더 본다.
  */
 export function isAllowedOrigin(req: Request): boolean {
   const origin = req.headers.get('origin');
-  /** 서버 사이드 호출이나 curl 은 origin 이 없다 — 개발 편의상 통과시킨다 */
-  if (!origin) return process.env.NODE_ENV !== 'production';
-  try {
-    const host = new URL(origin).host;
-    return (
-      host === 'jangmini.myjane.co.kr' ||
-      host.endsWith('.vercel.app') ||
-      host.startsWith('localhost:') ||
-      host === 'localhost'
-    );
-  } catch {
-    return false;
+  if (origin) {
+    try {
+      return isOurHost(new URL(origin).host);
+    } catch {
+      return false;
+    }
   }
+
+  const site = req.headers.get('sec-fetch-site');
+  if (site) return site === 'same-origin' || site === 'none';
+
+  const referer = req.headers.get('referer');
+  if (referer) {
+    try {
+      return isOurHost(new URL(referer).host);
+    } catch {
+      return false;
+    }
+  }
+
+  /** 아무 단서도 없다 — 개발에서 curl 로 확인할 수 있게 열어 둔다 */
+  return process.env.NODE_ENV !== 'production';
 }
 
 export type GuardResult =

@@ -9,12 +9,26 @@ import { FIELDS, FIELD_KEYS, readPath, applyOverrides, type WithOverrides } from
  * ⚠️ **원본 필드를 쓰지 않는다.** 고친 값은 `overrides` 에만 쌓는다 —
  * 문서를 직접 고치면 다음 `ingest --write` 에 지워진다. → lib/overrides.ts
  *
- * GET  ?kind=&q=            목록 (본문 제외)
+ * GET  ?kind=&group=&q=     목록 (본문 제외)
  * GET  ?slug=               한 건 (원본 값 + override 값을 **둘 다** 준다)
  * PATCH { slug, key, value } override 하나 저장. value 가 null 이면 되돌린다
  */
 
-const LIST_FIELDS = 'slug kind title summary company period.label order visibility featured overrides';
+const LIST_FIELDS =
+  'slug kind title summary company category period.label order visibility featured overrides';
+
+/**
+ * 종류마다 2차로 나누는 기준이 다르다.
+ *
+ * 기술 17건이 한 줄로 쏟아지면 찾기 어렵다 — 노션이 이미 분류를 갖고 있으니
+ * 그것을 쓴다. 프로젝트 46건은 분류가 없고 **소속**이 실제 구분선이다.
+ * 나머지는 건수가 적어 나눌 필요가 없다.
+ */
+const GROUP_FIELD: Partial<Record<PortfolioKind, 'category' | 'company'>> = {
+  skill: 'category',
+  activity: 'category',
+  project: 'company',
+};
 
 function bad(message: string, status = 400) {
   return Response.json({ error: message }, { status });
@@ -52,10 +66,21 @@ export async function GET(req: Request) {
   }
 
   /* ── 목록 ──────────────────────────────────────────── */
-  const kind = url.searchParams.get('kind');
+  const kindParam = url.searchParams.get('kind');
+  const kind = (PORTFOLIO_KINDS as readonly string[]).includes(kindParam ?? '')
+    ? (kindParam as PortfolioKind)
+    : null;
+  const group = url.searchParams.get('group');
   const q = (url.searchParams.get('q') ?? '').trim();
+
   const filter: Record<string, unknown> = {};
-  if (kind && (PORTFOLIO_KINDS as readonly string[]).includes(kind)) filter.kind = kind;
+  if (kind) filter.kind = kind;
+
+  const groupField = kind ? GROUP_FIELD[kind] : undefined;
+  if (group && groupField) {
+    /** "(없음)" 은 값이 비어 있는 것들을 모은다 */
+    filter[groupField] = group === '__none__' ? { $in: [null, ''] } : group;
+  }
   if (q) {
     const rx = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
     filter.$or = [{ title: rx }, { slug: rx }, { company: rx }];
@@ -87,8 +112,31 @@ export async function GET(req: Request) {
     { $group: { _id: '$kind', n: { $sum: 1 } } },
   ]);
 
+  /*
+    2차 분류의 개수는 **검색어와 무관하게** 낸다. 검색으로 좁힌 결과에서
+    세면 칩이 사라졌다 나타났다 해서 어디를 눌렀는지 놓친다.
+  */
+  let groups: { value: string; label: string; n: number }[] = [];
+  if (kind && groupField) {
+    const rows2 = await Portfolio.aggregate<{ _id: string | null; n: number }>([
+      { $match: { kind } },
+      { $group: { _id: `$${groupField}`, n: { $sum: 1 } } },
+      { $sort: { n: -1, _id: 1 } },
+    ]);
+    groups = rows2.map((r) => ({
+      value: r._id ? String(r._id) : '__none__',
+      label: r._id ? String(r._id) : '(분류 없음)',
+      n: r.n,
+    }));
+  }
+
   return Response.json(
-    { rows, counts: Object.fromEntries(counts.map((c) => [c._id, c.n])) },
+    {
+      rows,
+      counts: Object.fromEntries(counts.map((c) => [c._id, c.n])),
+      groupField: groupField ?? null,
+      groups,
+    },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }
