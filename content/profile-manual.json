@@ -13,17 +13,25 @@
     "",
     "이메일은 여기 적지 않는다 — 이력서 첫 줄에서 계속 자동으로 뽑고,",
     "링크 맨 앞에 놓인다. 두 곳에 적으면 한쪽만 고치는 일이 생긴다.",
-    "→ scripts/ingest.mjs 의 profile 조립 부분"
+    "→ scripts/ingest.mjs 의 profile 조립 부분",
+    "",
+    "④ 소개 뒤쪽 두 문단은 AI 를 대하는 태도다(2026-09-11 지시). 사실 블록이",
+    "   본문 앞부분만 잘라 쓰므로 **첫 문단 바로 뒤**에 둔다 — 끝에 붙이면",
+    "   잘려서 챗 답변에 닿지 않는다. → scripts/warm-answers.mjs buildFacts",
+    "",
+    "⑤ stanceNote 는 기술 스택 질문(category: 'skills') 답변 끝에 **그대로**",
+    "   붙는다. 모델이 다시 쓰게 두면 매번 빠지거나 반만 들어갔다 —",
+    "   본인의 신념이라 문장이 흔들리면 안 된다. → scripts/warm-answers.mjs"
   ],
-  "body": "저는 10년간 ASP.NET, JavaScript, jQuery, MSSQL을 활용하여 이커머스 분야의 다양한 웹 시스템을 개발하며 실무 경험을 쌓았습니다. 이후 2년간은 React, TypeScript, Next.js 기반의 프론트엔드 개발에 집중하며 최신 기술 트렌드에 부합하는 UI/UX 구현과 구조적인 코드 설계 역량을 강화해왔습니다. 또한 물류 도메인에서는 React Native를 활용한 PDA 앱 개발을 통해 OMS와 WMS 시스템에 대한 이해를 넓히고, 현장 중심의 기능 구현과 사용자 경험 개선에 기여했습니다. 최근에는 TracXLogis에서 Admin 시스템 리팩토링, 사용자 피드백 기반 UX 개선, AI Agent 구축을 통해 운영 효율화와 서비스 고도화를 주도했으며, 개인적으로도 OpenAI API와 최신 웹 기술을 활용한 다양한 서비스 개발을 통해 AI 기술의 실제 적용 가능성과 한계를 직접 검증해왔습니다. 개발자 커뮤니티 활동과 지속적인 기술 탐색을 통해 새로운 기술을 빠르게 학습하고 이를 기획과 서비스 개선에 적극 반영하며, 문제의 본질을 빠르게 파악하고 효과적으로 해결하는 역량을 바탕으로 지속적인 기술적 도전과 혁신을 추구하고 있습니다.\n\n### 기술\n- **Full Stack** — ASP.NET, .NET Framework, C#, jQuery, JavaScript, MS-SQL\n- **Front End** — React, TypeScript, Next.js, React Native, JSP, Vite, webpack, gulp, pnpm, Jotai, Recoil, GraphQL, MongoDB\n- **협업** — Jira, Confluence, Git, Bitbucket, Teams, Slack\n\n### 핵심 경력\n- 이커머스 전반의 프로세스에 대한 이해와 장애 상황에 따른 대처\n- 팀장·PM 으로 인적 자원과 일정을 관리하며 협업을 이끈 경험\n\n### 학력\n- 전주대학교 / 2012.02\n- 전주영생고등학교 / 2005.02\n\n### 자격\n- 코딩지도사 1급 / 2021.06\n- 정보처리기사 / 2012.11\n- TESOL / 2011.06\n\n### 병역\n- 육군 만기 제대",
+  "body": "저는 10년간 ASP.NET, JavaScript, jQuery, MSSQL을 활용하여 이커머스 분야의 다양한 웹 시스템을 개발하며 실무 경험을 쌓았습니다. 이후 2년간은 React, TypeScript, Next.js 기반의 프론트엔드 개발에 집중하며 최신 기술 트렌드에 부합하는 UI/UX 구현과 구조적인 코드 설계 역량을 강화해왔습니다. 또한 물류 도메인에서는 React Native를 활용한 PDA 앱 개발을 통해 OMS와 WMS 시스템에 대한 이해를 넓히고, 현장 중심의 기능 구현과 사용자 경험 개선에 기여했습니다. 최근에는 TracXLogis에서 Admin 시스템 리팩토링, 사용자 피드백 기반 UX 개선, AI Agent 구축을 통해 운영 효율화와 서비스 고도화를 주도했으며, 개인적으로도 OpenAI API와 최신 웹 기술을 활용한 다양한 서비스 개발을 통해 AI 기술의 실제 적용 가능성과 한계를 직접 검증해왔습니다. 개발자 커뮤니티 활동과 지속적인 기술 탐색을 통해 새로운 기술을 빠르게 학습하고 이를 기획과 서비스 개선에 적극 반영하며, 문제의 본질을 빠르게 파악하고 효과적으로 해결하는 역량을 바탕으로 지속적인 기술적 도전과 혁신을 추구하고 있습니다.\n\n최근에는 AI 기술을 실제로 쓰는 일에 무게를 두고 있습니다. 새로 나온 기술은 개인 프로젝트로 먼저 만들어 보며 빠르게 제 것으로 만들고, 업무에 들일 때는 어디서 어긋날 수 있는지를 먼저 확인한 뒤 신중하게 도입합니다. OpenAI Vision 으로 건강검진 결과지를 읽는 서비스에서는 추출 정확도를 실제 문서로 측정해 한계를 확인했고, 틀렸을 때 사람이 알아차리도록 검증 장치를 따로 만들었습니다. AI 가 만든 결과를 그대로 믿지 않는 것이 AI 를 실무에 쓰는 조건이라고 봅니다.\n\n기술을 대하는 관점도 여기서 나옵니다. 특정 스택을 얼마나 오래 다뤘느냐보다 필요한 영역에 얼마나 빨리 들어갈 수 있느냐가 더 중요해졌다고 생각합니다. AI 기술에 올라타면 익숙하지 않은 언어와 도메인의 벽을 훨씬 빨리 넘을 수 있고, 지금은 기초 스택을 넓히는 것보다 그쪽에 힘을 쏟는 편이 가장 효과적이라고 믿습니다.\n\n### 기술\n- **Full Stack** — ASP.NET, .NET Framework, C#, jQuery, JavaScript, MS-SQL\n- **Front End** — React, TypeScript, Next.js, React Native, JSP, Vite, webpack, gulp, pnpm, Jotai, Recoil, GraphQL, MongoDB\n- **협업** — Jira, Confluence, Git, Bitbucket, Teams, Slack\n\n### 핵심 경력\n- 이커머스 전반의 프로세스에 대한 이해와 장애 상황에 따른 대처\n- 팀장·PM 으로 인적 자원과 일정을 관리하며 협업을 이끈 경험\n\n### 학력\n- 전주대학교 / 2012.02\n- 전주영생고등학교 / 2005.02\n\n### 자격\n- 코딩지도사 1급 / 2021.06\n- 정보처리기사 / 2012.11\n- TESOL / 2011.06\n\n### 병역\n- 육군 만기 제대",
   "socialLinks": [
     {
       "label": "Instagram · @zang.m1n",
       "url": "https://www.instagram.com/zang.m1n"
     },
     {
-      "label": "Instagram · @zang.fit (운동)",
-      "url": "https://www.instagram.com/zang.fit"
+      "label": "Instagram · @zang.f1t (운동)",
+      "url": "https://www.instagram.com/zang.f1t"
     },
     {
       "label": "Instagram · @zang.w2b (AI 앱 소개)",
@@ -37,5 +45,6 @@
       "label": "Github",
       "url": "https://github.com/2xteam"
     }
-  ]
+  ],
+  "stanceNote": "덧붙이면, 저는 특정 스택을 얼마나 오래 다뤘느냐보다 필요한 영역에 얼마나 빨리 들어갈 수 있느냐가 더 중요해졌다고 봅니다. AI 기술에 올라타면 익숙하지 않은 언어와 도메인의 벽을 훨씬 빨리 넘을 수 있어서, 기초 스택을 넓히는 것보다 그쪽에 힘을 쏟고 있습니다. 새로 나온 기술은 개인 프로젝트로 먼저 만들어 보며 제 것으로 만들고, 업무에 들일 때는 어디서 어긋날 수 있는지 먼저 확인한 뒤 신중하게 도입합니다."
 }

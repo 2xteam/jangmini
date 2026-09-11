@@ -90,17 +90,41 @@ function readSuggestions() {
 
 function readSystemPrompt() {
   const src = readFileSync('src/app/api/chat/prompt.ts', 'utf8');
-  /** `const X = \`...\`.trim();` 형태의 절들을 순서대로 이어 붙인다 */
-  const names = ['CHARACTER', 'TONE', 'RESPONSE_STRUCTURE', 'BACKGROUND', 'TOOL_USAGE', 'RULES'];
+
+  /*
+    절 이름을 **여기에 나열하지 않는다.** prompt.ts 의 조립 배열에서 읽어
+    순서와 목록을 그대로 따른다.
+
+    예전에는 이름을 하드코딩해 두었다. 그래서 prompt.ts 에 절을 하나 더해도
+    (기술을 대하는 태도 = STANCE) 사전 생성 답변에는 빠졌다 — 실시간 답변만
+    새 규칙을 지키고 캐시된 답변은 옛 규칙 그대로였다. 프롬프트를 한 곳에서
+    관리하겠다는 이 파일의 목적이 이름 목록 하나 때문에 무너진 셈이다.
+  */
+  const head = 'export const SYSTEM_PROMPT_TEXT = [';
+  const at = src.indexOf(head);
+  if (at < 0) {
+    console.error('✗ prompt.ts 에서 SYSTEM_PROMPT_TEXT 조립 배열을 찾지 못했습니다.');
+    process.exit(1);
+  }
+  const names = src
+    .slice(at + head.length, src.indexOf(']', at))
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+
   const parts = [];
   for (const n of names) {
-    const m = new RegExp('const ' + n + " = `([\\s\\S]*?)`\\.trim\\(\\)").exec(src);
-    if (!m) {
+    /** `const X = ` ... ` .trim();` 형태에서 본문만 꺼낸다 */
+    const open = src.indexOf('const ' + n + ' = ');
+    const body = open < 0 ? -1 : src.indexOf('`', open) + 1;
+    const close = body < 1 ? -1 : src.indexOf('`.trim()', body);
+    if (close < 0) {
       console.error(`✗ prompt.ts 에서 ${n} 을 읽지 못했습니다.`);
       process.exit(1);
     }
-    parts.push(m[1].trim());
+    parts.push(src.slice(body, close).trim());
   }
+  console.log(`프롬프트 절 ${names.length}개: ${names.join(' · ')}`);
   return parts.join('\n\n');
 }
 
@@ -145,7 +169,15 @@ async function buildFacts(db) {
     '- /faq  자주 묻는 것',
     '- /chat  이 대화 화면',
     '',
-    `## 프로필\n${profile?.title} · ${profile?.summary}\n${(profile?.body ?? '').slice(0, 700)}`,
+    /**
+     * 소개는 **앞 1200자**를 쓴다. 700자였을 때 AI 를 대하는 태도를 적은
+     * 두 문단이 잘려 나가서 "기술 스택" 질문에 그 내용이 반영되지 않았다.
+     *
+     * 통째로 넣지 않는 이유는 뒤쪽의 `### 기술` `### 학력` 절이 아래의
+     * "기술 스택" · "학력·자격" 과 같은 말을 두 번 하기 때문이다.
+     * 새 문단을 소개에 넣을 때는 **앞쪽에** 둔다.
+     */
+    `## 프로필\n${profile?.title} · ${profile?.summary}\n${(profile?.body ?? '').slice(0, 1200)}`,
     '',
     /**
      * 링크를 빠뜨렸더니 연락처 답변이 "이력서에 기재된 이메일로" 라고만 하고
@@ -288,16 +320,40 @@ try {
   let tokIn = 0;
   let tokOut = 0;
 
+  /*
+    기술 스택 질문에는 **관점을 고정 문장으로** 붙인다.
+
+    프롬프트에 규칙으로 적어 봤지만 모델이 매번 다르게 줄였다 — 한 번은
+    한 문장만, 다음에는 아예 빠졌다. 본인의 신념이라 문장이 흔들리면 안 되고,
+    목록 뒤에 붙는 고정 문단이라 모델이 지어낼 여지도 없다.
+
+    원문은 `content/profile-manual.json` 의 `stanceNote` 하나다.
+    한국어 문장이므로 `lang === 'ko'` 일 때만 붙인다.
+  */
+  const stanceNote = (() => {
+    try {
+      return JSON.parse(readFileSync('content/profile-manual.json', 'utf8')).stanceNote ?? '';
+    } catch {
+      return '';
+    }
+  })();
+
   for (const p of todo) {
     const system = `${SYSTEM_PROMPT}\n\n${facts}\n\n## 이 답변의 언어\n${LANG_RULE[p.lang]}`;
     try {
       const r = await callOpenAI({ system, question: p.question, model });
       if (!r.answer) throw new Error('빈 답변');
+      const answer =
+        p.category === 'skills' && p.lang === 'ko' && stanceNote
+          ? `${r.answer.trim()}
+
+${stanceNote}`
+          : r.answer;
       await db.collection('answers').updateOne(
         { key: p.key, lang: p.lang, sourceVersion },
         {
           $set: {
-            answer: r.answer,
+            answer,
             model,
             tokensIn: r.tokensIn,
             tokensOut: r.tokensOut,
