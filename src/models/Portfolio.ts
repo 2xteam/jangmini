@@ -45,6 +45,11 @@ export type PortfolioDoc = {
    */
   visibility: 'public' | 'private';
   source: { type: 'notion' | 'docx' | 'manual'; id: string; lastEditedAt?: Date };
+  /**
+   * admin 에서 손으로 고친 값. 원본 필드는 그대로 두고 여기에만 쌓는다 —
+   * 문서를 직접 고치면 다음 적재에 지워진다. → lib/overrides.ts
+   */
+  overrides?: Record<string, unknown>;
   updatedAt?: Date;
   createdAt?: Date;
 };
@@ -85,6 +90,8 @@ const schema = new Schema<PortfolioDoc>(
       id: { type: String, required: true },
       lastEditedAt: Date,
     },
+    /** 키는 `lib/overrides.ts` 의 FIELDS 로 제한한다. 스키마는 열어 둔다 */
+    overrides: { type: Schema.Types.Mixed, default: undefined },
   },
   { timestamps: true },
 );

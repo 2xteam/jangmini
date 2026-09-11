@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { ContentTab } from '@/app/admin/content-tab';
 
 /**
- * 관리 콘솔. 탭 넷 — 사용량 · 설정 · 계정 · 추천질문.
+ * 관리 콘솔. 탭 다섯 — 사용량 · 콘텐츠 · 설정 · 계정 · 추천질문.
  *
  * 화면을 라우트로 쪼개지 않고 한 페이지에 둔다. 관리자가 한 명이고 각 탭이
  * 목록 하나씩이라, 라우트를 나누면 step-up 검사와 로딩 처리를 네 번 쓰게 된다.
@@ -13,10 +14,11 @@ import { Button } from '@/components/ui/button';
  * 서버 컴포넌트가 다시 step-up 폼을 그려야 한다.
  */
 
-type Tab = 'usage' | 'settings' | 'readers' | 'answers';
+type Tab = 'usage' | 'content' | 'settings' | 'readers' | 'answers';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'usage', label: '사용량' },
+  { id: 'content', label: '콘텐츠' },
   { id: 'settings', label: '설정' },
   { id: 'readers', label: '계정' },
   { id: 'answers', label: '추천질문' },
@@ -61,6 +63,7 @@ export function AdminConsole() {
       </div>
 
       {tab === 'usage' && <UsageTab />}
+      {tab === 'content' && <ContentTab />}
       {tab === 'settings' && <SettingsTab />}
       {tab === 'readers' && <ReadersTab />}
       {tab === 'answers' && <AnswersTab />}

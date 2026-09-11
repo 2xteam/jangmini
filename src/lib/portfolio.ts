@@ -1,5 +1,6 @@
 import { connectDb } from '@/lib/db';
 import { Portfolio, type PortfolioDoc, type PortfolioKind } from '@/models/Portfolio';
+import { applyOverrides, type WithOverrides } from '@/lib/overrides';
 
 /**
  * portfolio 컬렉션 조회를 한곳에 모은다.
@@ -14,6 +15,14 @@ import { Portfolio, type PortfolioDoc, type PortfolioKind } from '@/models/Portf
  */
 
 const PUBLIC = { visibility: 'public' as const };
+
+/**
+ * admin 에서 고친 값을 원본 위에 얹는다.
+ *
+ * ⚠️ **이 파일에서 문서를 내보내는 모든 자리를 거쳐야 한다.** 한 군데라도
+ * 빠뜨리면 그 화면만 옛 값을 보여준다. → lib/overrides.ts
+ */
+const merge = <T extends WithOverrides | null>(d: T) => applyOverrides(d);
 
 export type ProjectSummary = {
   slug: string;
@@ -41,7 +50,7 @@ const toSummary = (d: PortfolioDoc & { featured?: boolean }): ProjectSummary => 
 
 /** 목록에서 본문을 제외한다 */
 const LIST_FIELDS =
-  'slug title summary company role teamSize period techStack contribution featured category level order source.imageCount';
+  'slug title summary company role teamSize period techStack contribution featured category level order source.imageCount overrides';
 
 export async function getProjectList(opts: {
   featuredOnly?: boolean;
@@ -61,25 +70,26 @@ export async function getProjectList(opts: {
     .sort({ order: 1 })
     .limit(opts.limit ?? 100)
     .lean<(PortfolioDoc & { featured?: boolean })[]>();
-  return docs.map(toSummary);
+  return docs.map((d) => toSummary(merge(d)));
 }
 
 export async function getProject(slug: string) {
   await connectDb();
-  return Portfolio.findOne({ ...PUBLIC, kind: 'project', slug }).lean<PortfolioDoc>();
+  return merge(await Portfolio.findOne({ ...PUBLIC, kind: 'project', slug }).lean<WithOverrides>());
 }
 
 export async function getByKind(kind: PortfolioKind, limit = 200) {
   await connectDb();
-  return Portfolio.find({ ...PUBLIC, kind })
+  const docs = await Portfolio.find({ ...PUBLIC, kind })
     .sort({ order: 1 })
     .limit(limit)
-    .lean<PortfolioDoc[]>();
+    .lean<WithOverrides[]>();
+  return docs.map(merge);
 }
 
 export async function getProfile() {
   await connectDb();
-  return Portfolio.findOne({ ...PUBLIC, kind: 'profile' }).lean<PortfolioDoc>();
+  return merge(await Portfolio.findOne({ ...PUBLIC, kind: 'profile' }).lean<WithOverrides>());
 }
 
 /** 스킬을 분류별로 묶는다. 노션에서 온 것만 숙련도가 있다 */
