@@ -45,6 +45,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     <DocShell
       title={p.title}
       lead={p.summary ?? undefined}
+      backTo={{ href: '/projects', label: '프로젝트 전체' }}
       aside={
         <div className="space-y-4 text-sm">
           <dl className="space-y-2">
@@ -98,10 +99,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               </ul>
             </div>
           )}
-
-          <Link href="/projects" className="text-muted-foreground block hover:underline">
-            ← 프로젝트 전체
-          </Link>
         </div>
       }
     >
@@ -145,26 +142,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           </div>
         </section>
       )}
-
-      {/*
-        본문 끝에도 목록으로 가는 길을 둔다.
-
-        사이드바에 같은 링크가 있지만 **모바일에서는 사이드바가 본문 위에**
-        온다. 긴 글과 갤러리를 다 읽고 나면 화면 어디에도 돌아갈 곳이 없어서,
-        브라우저 뒤로가기 말고는 방법이 없었다.
-
-        데스크톱에서는 사이드바가 sticky 라 이미 보이지만, 여기 하나 더 있는
-        것이 해롭지 않다 — 다 읽은 자리에서 바로 누를 수 있다.
-      */}
-      <nav className="mt-10 border-t pt-6">
-        <Link
-          href="/projects"
-          className="hover:bg-accent inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
-        >
-          <span aria-hidden="true">←</span>
-          프로젝트 전체 보기
-        </Link>
-      </nav>
     </DocShell>
   );
 }
