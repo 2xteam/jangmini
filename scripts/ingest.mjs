@@ -890,13 +890,40 @@ try {
   let ins = 0;
   let upd = 0;
   for (const d of docs) {
-    const { slug, ...rest } = d;
+    const { slug, images, ...rest } = d;
+
+    /*
+      ⚠️ **빈 `images` 로 덮지 않는다.**
+
+      이 스크립트는 Notion 마크다운에서 이미지를 떼어내고 문서를 `images: []`
+      로 만든다. 실제 그림은 `images:migrate` 가 Notion 에서 받아 R2 에 올린 뒤
+      써 넣는다. 그래서 `$set` 에 빈 배열을 넣으면 **적재할 때마다 그 결과가
+      지워진다.** 실제로 그렇게 45건의 이미지 링크가 사라진 적이 있다
+      (2026-09-11). 파일은 R2 에 그대로 있었고 문서만 비어 있었다.
+
+      여기서 빈 배열은 "이미지가 없다"가 아니라 **"아직 모른다"**는 뜻이다.
+      아는 쪽(손등록·이관)이 채우고, 모르는 쪽은 손대지 않는다.
+
+      손등록 프로젝트는 자기 `images` 를 갖고 오므로 그대로 덮어쓴다.
+      → scripts/migrate-images.mjs · content/projects-manual.json
+    */
+    const hasImages = Array.isArray(images) && images.length > 0;
     const r = await col.updateOne(
       { 'source.type': d.source.type, 'source.id': d.source.id },
       {
-        $set: { ...rest, updatedAt: new Date(), ...(RESLUG ? { slug } : {}) },
+        $set: {
+          ...rest,
+          updatedAt: new Date(),
+          ...(RESLUG ? { slug } : {}),
+          ...(hasImages ? { images } : {}),
+        },
         /** slug 는 사람이 고칠 수 있다. 이미 있으면 덮지 않는다 */
-        $setOnInsert: { createdAt: new Date(), ...(RESLUG ? {} : { slug }) },
+        $setOnInsert: {
+          createdAt: new Date(),
+          ...(RESLUG ? {} : { slug }),
+          /** 처음 만들 때만 빈 배열을 둔다 — 그 뒤로는 건드리지 않는다 */
+          ...(hasImages ? {} : { images: [] }),
+        },
       },
       { upsert: true },
     );
@@ -906,6 +933,21 @@ try {
   const total = await col.countDocuments();
   console.log(`\n✓ 적재 완료 — 신규 ${ins} · 갱신 ${upd} · 컬렉션 총 ${total}건`);
   console.log(`  확인:  pnpm db:check`);
+
+  /*
+    이미지는 이 스크립트가 채우지 않는다. 비어 있는 것을 **끝에서 세어
+    알려준다** — 예전에는 조용히 비어 있어서, 이력 화면에 그림이 하나도
+    없다는 것을 사람이 나중에 발견했다.
+  */
+  const needImages = await col.countDocuments({
+    'source.imageCount': { $gt: 0 },
+    'images.0': { $exists: false },
+  });
+  if (needImages) {
+    console.log(`
+  ! 이미지가 비어 있는 문서 ${needImages}건 (Notion 에 그림이 있는 문서)`);
+    console.log(`    채우려면:  pnpm images:migrate -- --write`);
+  }
 } catch (err) {
   console.error('\n✗ 적재 실패:', err instanceof Error ? err.message : err);
   process.exitCode = 1;
