@@ -55,6 +55,27 @@ export default async function ResumePage() {
     .map((p) => p.replace(/\*\*/g, '').trim())
     .filter((p) => p && !p.startsWith('>') && !p.startsWith('!['));
 
+  /**
+   * 소개 본문에서 `### 이름` 절의 불릿만 꺼낸다.
+   *
+   * 병역처럼 **한 줄짜리 기본 사항**이 갈 곳이 마땅치 않아서다. 소개는
+   * 첫 소제목 앞까지만 쓰므로 그냥 두면 화면에서 사라진다. 원본은 계속
+   * Notion(소개 본문)에 두고 여기서 꺼내 쓴다 — 두 곳에 적지 않는다.
+   */
+  const sectionItems = (name: string) => {
+    const body = profile?.body ?? '';
+    const m = new RegExp(`^#{2,}\\s*${name}\\s*$`, 'm').exec(body);
+    if (!m) return [] as string[];
+    const after = body.slice(m.index + m[0].length);
+    const out: string[] = [];
+    for (const line of after.split('\n')) {
+      if (/^#{2,}\s/.test(line)) break;
+      const b = /^\s*[-*]\s+(.+)$/.exec(line);
+      if (b) out.push(b[1].replace(/\*\*/g, '').trim());
+    }
+    return out;
+  };
+
   return (
     <DocShell
       title="이력서"
@@ -161,6 +182,11 @@ export default async function ResumePage() {
             { label: '학력', items: education },
             { label: '자격증', items: certificates },
             { label: '교육 및 대외활동', items: activities },
+            /** 병역은 기본 사항이라 넣는다. 소개 본문의 `### 병역` 이 원본이다 */
+            {
+              label: '병역',
+              items: sectionItems('병역').map((t, n) => ({ slug: `military-${n}`, summary: null, title: t, company: null })),
+            },
           ].map(({ label, items }) =>
             items.length ? (
               <div key={label}>
@@ -168,9 +194,11 @@ export default async function ResumePage() {
                 <ul className="space-y-1">
                   {items.map((e) => (
                     <li key={e.slug}>
-                      <span className="text-muted-foreground mr-2 inline-block min-w-[9.5rem] tabular-nums">
-                        {e.summary ?? '—'}
-                      </span>
+                      {e.summary && (
+                        <span className="text-muted-foreground mr-2 inline-block min-w-[9.5rem] tabular-nums">
+                          {e.summary}
+                        </span>
+                      )}
                       <span>{e.title}</span>
                       {e.company && <span className="text-muted-foreground"> · {e.company}</span>}
                     </li>
