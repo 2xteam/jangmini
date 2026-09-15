@@ -39,9 +39,20 @@ export default async function ResumePage() {
       getStackTimeline(5),
     ]);
 
+  /*
+    소개는 **첫 소제목 앞까지**의 산문만 쓴다.
+
+    예전에는 `about.slice(0, 4)` 로 앞 4문단을 잘랐다. 문단 수를 세는 규칙이라
+    소개에 문단을 하나 더하면 뒤가 밀려 나가고, 반대로 문단이 적으면
+    `### 기술` 블록이 딸려 들어왔다 — 실제로 둘 다 겪었다(2026-09-15).
+
+    본문 뒤쪽의 기술·학력·자격은 04·05 절에 이미 있다. 여기 또 나오면
+    같은 내용을 두 번 읽게 된다.
+  */
   const about = (profile?.body ?? '')
+    .split(/^#{2,}\s.*$/m)[0]
     .split(/\n{2,}/)
-    .map((p) => p.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').trim())
+    .map((p) => p.replace(/\*\*/g, '').trim())
     .filter((p) => p && !p.startsWith('>') && !p.startsWith('!['));
 
   return (
@@ -67,7 +78,7 @@ export default async function ResumePage() {
       <DocSection no="01" title="소개">
         {/* 폭을 46rem 으로 묶는다 — 화면 폭을 다 쓰면 한 줄이 너무 길다 */}
         <div className="max-w-[46rem] space-y-4 text-[15px] leading-[1.85]">
-          {about.slice(0, 4).map((p, i) => (
+          {about.map((p, i) => (
             <p key={i}>{p}</p>
           ))}
         </div>

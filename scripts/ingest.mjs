@@ -737,50 +737,25 @@ const idxOf = (re) => rLines.findIndex((l) => re.test(l));
   if (!n) warnings.push('대외활동을 파싱하지 못했습니다');
 }
 
-/**
- * 에세이 — 구조가 자유로우므로 덩어리로 담는다.
- *
- * 병역은 따로 문서를 만들지 않는다. Notion 루트 페이지의 프로필 안에
- * `### 병역 / - 육군 만기 제대` 로 이미 들어 있어서, 별도 문서로 넣으면
- * 중복이 되고 kind 를 certificate 로 두면 자격증 목록에 섞인다.
- */
-{
-  const ESSAYS = [
-    { key: /자기 소개/, title: '자기 소개', until: /^가족$/ },
-    { key: /^가족$/, title: '가족', until: /^학창 시절 및 활동$/ },
-    { key: /^학창 시절 및 활동$/, title: '학창 시절 및 활동', until: /지원 동기/ },
-    { key: /지원 동기/, title: '지원 동기', until: /기타 사항/ },
-  ];
-  let n = 0;
-  for (const e of ESSAYS) {
-    const s = rLines.findIndex((l) => e.key.test(l));
-    if (s < 0) {
-      warnings.push(`에세이 "${e.title}" 를 찾지 못했습니다`);
-      continue;
-    }
-    let stop = rLines.findIndex((l, i) => i > s && e.until.test(l));
-    if (stop < 0) stop = Math.min(s + 60, rLines.length);
-    const text = rLines
-      .slice(s + 1, stop)
-      .filter(Boolean)
-      .join('\n\n');
-    if (!text) continue;
-    push({
-      kind: 'essay',
-      slug: uniqueSlug(slugify(e.title), usedSlugs, `essay-${n + 1}`),
-      title: e.title,
-      summary: text.slice(0, 120).replace(/\n/g, ' '),
-      body: text,
-      techStack: [],
-      highlights: [],
-      links: [],
-      images: [],
-      order: n++,
-      visibility: 'public',
-      source: { type: 'docx', id: `essay:${e.title}` },
-    });
-  }
-}
+/*
+  ══════════════ 자기소개서는 만들지 않는다 ══════════════
+
+  이력서 .docx 에 "자기 소개 / 가족 / 학창 시절 및 활동 / 지원 동기" 네 절이
+  있고 예전에는 kind: 'essay' 로 담았다. 2026-09-15 에 걷어냈다.
+
+  ① **어디에도 쓰이지 않았다.** 화면 넷 중 어느 것도 그리지 않고, 챗 tool
+     여섯 개 중 어느 것도 읽지 않으며, 답변 사실 블록에도 없다. DB 에 들어와
+     앉아만 있었다.
+  ② **가족 항목은 배우자·딸 이야기다.** 직무와 무관한 개인정보이고, 공공기관·
+     공기업·대기업은 아예 묻지 않는다. 공개 사이트에 둘 값이 아니다.
+  ③ **학창 시절은 14년차 문서에 연차를 깎는다.** 초등 육상부·중학 농구가
+     경력 옆에 놓이면 신입 자소서 양식으로 읽힌다.
+  ④ **지원 동기는 회사마다 다시 써야** 힘이 있다. 일반론으로 박아 두면
+     담당자가 읽지 않는다.
+
+  운동·체력 관리처럼 살릴 값이 있는 한 줄은 소개문에 넣었다
+  → content/profile-manual.json
+*/
 
 /* ══════════════ 리포트 ══════════════════════════════════════ */
 
@@ -853,7 +828,7 @@ for (const d of byKind.skill ?? []) {
   );
 }
 
-for (const kind of ['experience', 'education', 'certificate', 'activity', 'essay']) {
+for (const kind of ['experience', 'education', 'certificate', 'activity']) {
   const list = byKind[kind];
   if (!list) continue;
   console.log(`\n─── ${kind} ───`);
