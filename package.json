@@ -18,7 +18,8 @@
     "icons": "node scripts/make-icons.mjs",
     "warm": "node scripts/warm-answers.mjs",
     "shots:upload": "node scripts/upload-shots.mjs",
-    "notion:switch": "node scripts/switch-notion-source.mjs"
+    "notion:switch": "node scripts/switch-notion-source.mjs",
+    "notion:restructure": "node scripts/notion-restructure.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",
