@@ -19,10 +19,18 @@ import path from 'node:path';
 const OUT_DIR = 'tmp-ingest';
 
 /** 루트 포트폴리오 페이지 */
-const ROOT_PAGE = '73f9685e-f7da-4368-b724-d8dd83c66a87';
+/**
+ * 원본은 **'장민 / 포트폴리오 New'** 다 (2026-09-15 교체).
+ *
+ * ⚠️ 여기 세 id 를 바꿀 때는 **먼저 `pnpm notion:switch` 를 돌린다.**
+ * 적재는 `(source.type, source.id)` 로 upsert 하므로, id 만 바꾸면 기존
+ * 문서를 못 찾고 새로 넣으려다 slug 유니크 인덱스에 걸린다.
+ * → scripts/switch-notion-source.mjs
+ */
+const ROOT_PAGE = '3dcdca69-72b8-809a-8858-ca809186e6e2';
 /** 인라인 DB 두 개 */
-const DB_HISTORY = '9c8683cb-83bf-4886-8335-09c55eceefd1'; // 포트폴리오 이력
-const DB_RESOURCE = '7c7c3a75-9223-47f0-9c99-6213eb333258'; // 포트폴리오 리소스
+const DB_HISTORY = 'db5dca69-72b8-834d-896c-013f4a82615c'; // 포트폴리오 이력
+const DB_RESOURCE = '082dca69-72b8-82e2-b3a2-813745afc343'; // 포트폴리오 리소스
 
 /**
  * 2022-06-28 을 쓴다. 이 버전에서 databases/{id}/query 가 정상 동작한다.
