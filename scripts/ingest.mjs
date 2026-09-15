@@ -64,41 +64,40 @@ const SIDE_PROJECT_KEYS = ['Ignite Architecture', 'SnapApps', '함히보까', '�
  * 지금은 이 목록이 원본이다. Admin 에서 토글하게 되면 그때 DB 로 원본을
  * 옮긴다 (그전까지 재수집이 DB 값을 덮으므로 두 곳에 두지 않는다).
  */
-const FEATURED = [
-  { match: 'Ignite Architecture', why: '사이드 · 건축사무소 브랜딩. 기획~납품 전 과정' },
-  { match: 'TracX AI Agent', why: '트랙스로지스 AI · RAG + Tool Calling' },
-  { match: 'SnapApps', why: '사이드 · SnapWord/SnapNote 시리즈' },
-  { match: 'WMS 시스템', why: 'React Native PDA 스캐너 · 현장 검증' },
-  { match: 'OMS 기업 주문', why: '설로인 OMS · API 호출 99% 감소' },
-  { match: 'ASP.NET FE & BE', why: '.NET → React 전환' },
+/**
+ * 대표 프로젝트와 고정 슬러그.
+ *
+ * ⚠️ **제목이 아니라 Notion 페이지 id 로 건다.**
+ *
+ * 예전에는 제목 부분일치였다. 그러면 Notion 에서 제목을 다듬는 순간
+ * 슬러그(= 공개 URL)와 대표 여부가 **함께 바뀐다.** 밖으로 나간 링크가
+ * 깨지고, 대표 목록에서 조용히 빠진다. 페이지 id 는 제목을 바꿔도 그대로다.
+ *
+ * 그래서 이력서 문장을 고치려고 제목을 손봐도 안전하다. 새 프로젝트를
+ * 대표로 올리려면 여기에 id 한 줄을 더한다 — id 는 admin 콘텐츠 탭이나
+ * Notion 페이지 URL 끝에서 볼 수 있다.
+ */
+const PINNED = [
+  { id: '9dedca69-72b8-8216-8820-81ad99c6c6d1', slug: 'ignite-architecture', featured: true, why: '사이드 · 건축사무소 브랜딩. 기획~납품 전 과정' },
+  { id: '00cdca69-72b8-820d-b630-81fc0aa002dc', slug: 'tracx-ai-agent', featured: true, why: '트랙스로지스 AI · RAG + Tool Calling' },
+  { id: '28bdca69-72b8-82c5-a2d4-81335bdf946f', slug: 'snapapps', featured: true, why: '사이드 · SnapWord/SnapNote 시리즈' },
+  { id: '065dca69-72b8-82c6-8914-81529dfaea38', slug: 'wms-pda-scanner', featured: true, why: 'React Native PDA 스캐너 · 현장 검증' },
+  { id: '33fdca69-72b8-833f-8ad6-01dc78e2ff4a', slug: 'sirloin-oms', featured: true, why: '설로인 OMS · API 호출 99% 감소' },
+  { id: 'd13dca69-72b8-8278-bb01-8117934855ea', slug: 'aspnet-fe-be-split', featured: true, why: '.NET → React 전환' },
   /**
    * AI 작업으로 소개하지 않는다. 이력서 기술스택에 OpenAI 가 적혀 있지만
    * 노션 본문의 실제 작업은 레거시 구조 정리·용어 통일·팀 자동배정이다
    * (2026-09-08 사용자 확인).
    */
-  { match: 'Inquiry Ticket', why: '트랙스로지스 · 고객응대(Ticket) 서비스 개발' },
+  { id: 'd95dca69-72b8-8210-a135-81f8b679d19a', slug: 'inquiry-ticket-admin', featured: true, why: '트랙스로지스 · 고객응대(Ticket) 서비스 개발' },
+
+  /* 슬러그만 고정한다 — 대표는 아니다 */
+  { id: '98bdca69-72b8-83b9-bf0b-812d718ab636', slug: 'hamhibokka', featured: false },
+  { id: '1b9dca69-72b8-8344-8c92-01c38dc7f85b', slug: 'shipping-fee-admin-ux', featured: false },
+  { id: 'c74dca69-72b8-826c-8862-01f6e9c9f7f6', slug: 'shipping-fee-nextjs', featured: false },
 ];
 
-/**
- * 슬러그 손질. 로마자 자동 생성은 정확하지만 URL 로 길고 안 예쁘다
- * (`baesongbi-gwanripeiji-next-js-ripektoring`). **공유될 프로젝트만** 다듬는다.
- * 적용하려면 `--reslug` 를 준다 — 기본은 기존 슬러그를 덮지 않는다.
- */
-const SLUG_OVERRIDES = [
-  { match: 'Ignite Architecture', slug: 'ignite-architecture' },
-  { match: 'TracX AI Agent', slug: 'tracx-ai-agent' },
-  { match: 'SnapApps', slug: 'snapapps' },
-  { match: 'WMS 시스템', slug: 'wms-pda-scanner' },
-  { match: 'OMS 기업 주문', slug: 'sirloin-oms' },
-  { match: 'ASP.NET FE & BE', slug: 'aspnet-fe-be-split' },
-  { match: '함히보까', slug: 'hamhibokka' },
-  { match: 'Inquiry Ticket', slug: 'inquiry-ticket-admin' },
-  { match: '배송비 관리 Admin UX', slug: 'shipping-fee-admin-ux' },
-  { match: '배송비 관리페이지 Next.js', slug: 'shipping-fee-nextjs' },
-];
-
-const isFeatured = (title) => FEATURED.some((f) => title.includes(f.match));
-const slugOverride = (title) => SLUG_OVERRIDES.find((o) => title.includes(o.match))?.slug ?? null;
+const pinnedOf = (pageId) => PINNED.find((p) => p.id === pageId) ?? null;
 
 function loadEnv() {
   for (const file of ['.env.local', '.env']) {
@@ -228,7 +227,7 @@ projectRows.forEach(({ row, body }, i) => {
 
   push({
     kind: 'project',
-    slug: uniqueSlug(slugOverride(title) ?? slugify(title), usedSlugs, `project-${i + 1}`),
+    slug: uniqueSlug(pinnedOf(row.id)?.slug ?? slugify(title), usedSlugs, `project-${i + 1}`),
     title,
     summary,
     body: cleaned,
@@ -247,8 +246,8 @@ projectRows.forEach(({ row, body }, i) => {
     /** 이미지는 R2 재호스팅 단계에서 채운다. 만료 URL 을 저장하지 않는다 */
     images: [],
     order: i,
-    /** `/resume` 에 싣는 대표 프로젝트 → FEATURED 주석 참고 */
-    featured: isFeatured(title),
+    /** `/resume` 에 싣는 대표 프로젝트 → PINNED 주석 참고 */
+    featured: Boolean(pinnedOf(row.id)?.featured),
     visibility: 'public',
     source: {
       type: 'notion',
@@ -824,15 +823,18 @@ const featuredDocs = projectsInOrder.filter((d) => d.featured);
 console.log(`\n─── 대표 프로젝트 ${featuredDocs.length}건 (/resume 에 싣는 것) ───`);
 for (const d of featuredDocs) {
   const why =
-    FEATURED.find((f) => d.title.includes(f.match))?.why ??
+    pinnedOf(d.source.id)?.why ??
     (d.source.type === 'manual' ? '손등록 (content/projects-manual.json)' : '');
   console.log(`  ${(d.period.label || '-').padEnd(19)} ${d.slug.padEnd(22)} ${why}`);
 }
-const notFound = FEATURED.filter(
-  (f) => !(byKind.project ?? []).some((d) => d.title.includes(f.match)),
-);
+/*
+  PINNED 에 적었는데 Notion 에서 사라진 id 를 알려준다. 예전에는 제목으로
+  맞췄기 때문에 제목만 다듬어도 여기 걸렸다 — 이제는 **정말 없어졌을 때만**
+  걸린다.
+*/
+const notFound = PINNED.filter((p) => !(byKind.project ?? []).some((d) => d.source.id === p.id));
 if (notFound.length) {
-  console.log(`  ! FEATURED 에 있으나 못 찾은 항목: ${notFound.map((m) => m.match).join(', ')}`);
+  console.log(`  ! PINNED 에 있으나 Notion 에 없는 id: ${notFound.map((m) => m.slug).join(', ')}`);
 }
 
 console.log('\n─── 프로젝트 슬러그 (최신순 · ★ 는 대표) ───');
