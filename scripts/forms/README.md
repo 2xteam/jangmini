@@ -53,6 +53,34 @@ Word 에서 그 말로 검색하면 남은 자리가 전부 나온다. 이력서
 ANSI 로 읽어서 한글 경로가 깨진다 (`지원서` → `吏?먯꽌`). 편집한 뒤에는
 BOM 이 남아 있는지 확인한다.
 
+## ⚠️ 문단을 지우면 거기 매달린 도형도 사라진다
+
+이 양식들의 **절 구분선은 문단이 아니라 도형**(Straight Connector)이다.
+문단에 매달려 있어서 `Replace-Paras` 가 그 문단을 지우면 선도 함께 사라진다.
+본문만 읽어서는 알아채지 못한다 — 도형 수를 세야 보인다.
+
+보배써치 양식에서 실제로 두 줄을 잃었다(13개 → 11개): 핵심 역량 · 학 력 사 항
+아래 선. 채운 뒤 **도형 수를 원본과 비교**하고, 줄었으면 Word 에서 직접 선을
+그어 넣는 편이 빠르다. `Shapes.AddLine` 으로 되돌려 보려 했지만 Word 자동화가
+대화상자에 걸려 멈췄다.
+
+```powershell
+# 원본과 결과의 도형 수를 비교한다
+$w = New-Object -ComObject Word.Application; $w.Visible = $false
+foreach ($p in @("<원본>", "<결과>")) {
+  $d = $w.Documents.Open($p, [ref]$false, [ref]$true)
+  Write-Output ("{0} 도형 {1}" -f (Split-Path $p -Leaf), $d.Shapes.Count)
+  $d.Close([ref]$false)
+}
+$w.Quit()
+```
+
+## ⚠️ Word 를 강제 종료하면 다음 실행이 멈춘다
+
+자동화가 멈췄다고 `Stop-Process -Force` 로 여러 번 죽이면, Word 가 다음에 뜰 때
+**문서 복구 창**을 띄우려다 자동화가 그 창에서 멈춘다. 그때는 사람이 Word 를
+한 번 직접 열어 복구 창을 닫아 줘야 풀린다.
+
 ## 주의 — 신상 정보
 
 `tmp-form/data.json` 에 **휴대폰 번호와 생년월일**이 들어 있다. `.gitignore`
