@@ -310,6 +310,14 @@ function TodoLine({
 
   const bare = todo.line.replace(/^\s*[-*]\s*/, '');
   const [before, after] = bare.split(PH);
+  /**
+   * 원래 거기 뭐라고 쓰여 있었는지.
+   *
+   * 힌트만 줄여서 보여 줬더니 "어떤 문장이었는지 모르겠다" 가 됐다. 사람이
+   * 쓸 값을 정하려면 **원문 그대로**가 보여야 한다 — 입력칸의 흐린 글씨로
+   * 띄워 두면 타자를 치는 순간 사라지므로 자리를 더 먹지도 않는다.
+   */
+  const original = strip((bare.match(PH) ?? [''])[0]).replace(/^\[|\]$/g, '');
 
   const run = async (action: 'fill' | 'drop') => {
     if (busy) return;
@@ -330,11 +338,14 @@ function TodoLine({
         active ? 'border-brand bg-brand/5' : 'border-amber-400/70 bg-amber-50/40'
       }`}
     >
-      <div className="text-muted-foreground mb-1.5 flex items-center gap-2 text-[11px]">
+      <div className="text-muted-foreground mb-1.5 flex flex-wrap items-center gap-2 text-[11px]">
         <span className="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-900">
           {todo.kindLabel}
         </span>
-        <span>{strip(todo.hint)}</span>
+        <span className="opacity-70">원래 문구</span>
+        <code className="rounded bg-amber-100/60 px-1.5 py-0.5 font-mono text-[11px] text-amber-900">
+          {strip(bare)}
+        </code>
       </div>
 
       {/* 문장 한가운데면 앞뒤를 그대로 두고 그 자리에만 칸을 넣는다 */}
@@ -351,8 +362,9 @@ function TodoLine({
             }
           }}
           disabled={busy || disabled}
-          placeholder={todo.whole ? '이 자리에 들어갈 문장' : '값만'}
-          size={todo.whole ? 48 : Math.max(10, value.length + 4)}
+          placeholder={original}
+          size={todo.whole ? 48 : Math.max(12, value.length || original.length)}
+          title={`원래 문구 — ${original}`}
           className="border-brand/50 focus:border-brand min-w-[8rem] max-w-full flex-1 rounded border-b-2 border-x-0 border-t-0 bg-transparent px-1 py-0.5 text-[15px] outline-none disabled:opacity-50"
         />
         {!todo.whole && after && <span>{strip(after)}</span>}
