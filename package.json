@@ -22,7 +22,8 @@
     "notion:restructure": "node scripts/notion-restructure.mjs",
     "notion:resume": "node scripts/notion-write-resume.mjs",
     "notion:counts": "node scripts/notion-fill-counts.mjs",
-    "notion:drop99": "node scripts/notion-drop-99.mjs"
+    "notion:drop99": "node scripts/notion-drop-99.mjs",
+    "form:data": "node scripts/forms/build-data.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",

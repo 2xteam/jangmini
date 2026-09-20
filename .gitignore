@@ -45,3 +45,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 지원서 생성용 중간 산출물. **휴대폰 번호 등 신상 정보가 들어 있다** — 커밋하지 않는다
+tmp-form/

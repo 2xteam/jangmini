@@ -1,0 +1,41 @@
+{
+  "_comment": "본보기다. tmp-form/personal.json 으로 복사해 실제 값을 채운다. 그 파일은 커밋되지 않는다.",
+  "name": "홍 길 동",
+  "birth": {
+    "y": 1900,
+    "m": 1,
+    "d": 1
+  },
+  "gender": "남",
+  "phone": null,
+  "address": null,
+  "military": {
+    "text": "육군 병장 만기전역",
+    "from": "2006.03",
+    "to": "2008.03"
+  },
+  "salaryCurrent": null,
+  "salaryWanted": null,
+  "leaveReason": null,
+  "availableFrom": null,
+  "toeic": null,
+  "awards": null,
+  "companies": {
+    "트랙스로지스": {
+      "rank": null,
+      "note": null
+    },
+    "설로인": {
+      "rank": null,
+      "note": null
+    },
+    "큐텐테크놀로지": {
+      "rank": null,
+      "note": null
+    },
+    "엑스오비스": {
+      "rank": null,
+      "note": null
+    }
+  }
+}
