@@ -53,6 +53,21 @@ export type PortfolioDoc = {
   /** `merged` 일 때, 이 문서를 흡수한 대표의 slug */
   mergedInto?: string | null;
   /**
+   * 아직 못 채운 자리. 원본(Notion)에 `[숫자: …]` 로 남아 있는 것들이다.
+   *
+   * 본문에서는 이 줄을 빼고 내보내지만 목록은 남긴다 — admin 이 이걸 읽어
+   * "다음 채울 곳" 으로 데려간다. 없으면 47건을 사람이 뒤져야 한다.
+   */
+  todos?: {
+    section: string;
+    hint: string;
+    kindLabel: string;
+    /** 원본의 그 줄. Notion 블록을 찾을 때 쓴다 */
+    line: string;
+    /** 줄 전체가 채울 자리인가 (아니면 문장 한가운데) */
+    whole: boolean;
+  }[];
+  /**
    * `private` 은 공개 조회 쿼리가 집지 않는다.
    * 급여·개인 연락처·재직 중 내부 정보는 여기로 둔다 —
    * 시스템 프롬프트로만 막으면 언젠가 새 나간다.
@@ -99,6 +114,10 @@ const schema = new Schema<PortfolioDoc>(
     order: { type: Number, default: 0 },
     tier: { type: String, enum: ['flagship', 'personal', 'timeline', 'merged'] },
     mergedInto: { type: String, default: null },
+    todos: {
+      type: [{ _id: false, section: String, hint: String, kindLabel: String, line: String, whole: Boolean }],
+      default: [],
+    },
 
     visibility: { type: String, required: true, enum: ['public', 'private'], default: 'public' },
     source: {

@@ -250,6 +250,37 @@ function push(doc) {
  * 역슬래시까지 함께 집는다. 안 그러면 줄에 `\\` 하나가 남는다.
  */
 const PLACEHOLDER = /\\?\[(?:숫자|한계|이유|결정)[^\]]*\\?\]/;
+/**
+ * 채울 자리를 **버리지 않고 목록으로 남긴다.**
+ *
+ * 화면에서는 감추지만 admin 이 이걸 읽어 "다음 채울 곳" 으로 데려간다.
+ * 기록하지 않으면 어느 프로젝트에 무엇이 비었는지 사람이 Notion 을
+ * 뒤져야 한다 — 47건 중에서 찾는 일은 실제로 못 한다.
+ *
+ * 각 항목은 Notion 으로 되쓰기에 필요한 것을 다 갖는다 —
+ * `line` 으로 블록을 찾고, `whole` 로 줄째 바꿀지 조각만 바꿀지 정한다.
+ */
+function collectTodos(md) {
+  const out = [];
+  let section = '';
+  for (const raw of md.split(/\r?\n/)) {
+    const h = /^#{1,3}\s+(.+?)\s*$/.exec(raw);
+    if (h) section = h[1].replace(/[*`]/g, '').replace(/^\d+\.?\s*/, '').trim();
+    if (!PLACEHOLDER.test(raw)) continue;
+    const hint = (raw.match(PLACEHOLDER) ?? [''])[0].replace(/^\\?\[|\\?\]$/g, '');
+    const bare = raw.replace(/^\s*[-*]\s*/, '').trim();
+    out.push({
+      section,
+      hint: hint.replace(/^[^:/]*[:/]?\s*/, '').trim() || hint,
+      kindLabel: (hint.match(/숫자|한계|이유|결정/) ?? ['숫자'])[0],
+      line: raw.trim(),
+      /** 줄 전체가 채울 자리인가 — 아니면 문장 한가운데 끼어 있다 */
+      whole: bare === (raw.match(PLACEHOLDER) ?? [''])[0],
+    });
+  }
+  return out;
+}
+
 function stripPlaceholders(md) {
   return md
     .split('\n')
@@ -303,7 +334,7 @@ projectRows.forEach(({ row, body }, i) => {
    * 읽힌다. 그래서 원본은 그대로 두고 **내보낼 때만** 걷어낸다.
    * 무엇이 남았는지는 아래 경고로 알려 준다.
    */
-  const placeholders = noImages.split(/\r?\n/).filter((l) => PLACEHOLDER.test(l));
+  const todos = collectTodos(noImages);
   const cleaned = cleanMarkdown(stripPlaceholders(noImages));
   const links = extractLinks(noImages);
   const sections = splitSections(cleaned);
@@ -342,8 +373,8 @@ projectRows.forEach(({ row, body }, i) => {
    */
   const summary = pickSummary(overview, sections['__intro__']) || null;
 
-  if (placeholders.length) {
-    warnings.push(`채움 자리 ${placeholders.length}곳을 사이트에서 감췄습니다 (Notion 에서 채우세요): ${title}`);
+  if (todos.length) {
+    warnings.push(`채움 자리 ${todos.length}곳 — admin '채울 자리' 탭에서 고칠 수 있습니다: ${title}`);
   }
   if (!overview) warnings.push(`개요 섹션 없음(도입부로 대체): ${title}`);
   if (!highlights.length) warnings.push(`성과 불릿 없음: ${title}`);
@@ -371,6 +402,7 @@ projectRows.forEach(({ row, body }, i) => {
     images: [],
     order: i,
     tier,
+    todos,
     /** 합쳐짐이면 어느 대표로 들어갔는지. 대표 페이지가 이걸로 원본을 모은다 */
     mergedInto: ABSORBED_BY[row.id] ?? null,
     /**
