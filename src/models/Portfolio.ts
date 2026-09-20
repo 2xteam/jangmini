@@ -39,6 +39,20 @@ export type PortfolioDoc = {
   images: { url: string; alt?: string }[];
   order: number;
   /**
+   * 프로젝트의 계층. Notion 의 `구분` 에서 온다.
+   *
+   *   flagship  대표 — 합본. 크게 조판한다
+   *   personal  개인 — 사이드 프로젝트
+   *   timeline  연표 — 한 줄씩
+   *   merged    대표 안으로 들어간 원본. 목록에는 없지만 URL 로는 열린다
+   *
+   * `visibility` 와 겹치지 않는다. merged 는 감추는 것이 아니라 **목록에서만
+   * 빼는 것**이고, private 은 아예 내보내지 않는 것이다.
+   */
+  tier?: 'flagship' | 'personal' | 'timeline' | 'merged';
+  /** `merged` 일 때, 이 문서를 흡수한 대표의 slug */
+  mergedInto?: string | null;
+  /**
    * `private` 은 공개 조회 쿼리가 집지 않는다.
    * 급여·개인 연락처·재직 중 내부 정보는 여기로 둔다 —
    * 시스템 프롬프트로만 막으면 언젠가 새 나간다.
@@ -83,6 +97,9 @@ const schema = new Schema<PortfolioDoc>(
       default: [],
     },
     order: { type: Number, default: 0 },
+    tier: { type: String, enum: ['flagship', 'personal', 'timeline', 'merged'] },
+    mergedInto: { type: String, default: null },
+
     visibility: { type: String, required: true, enum: ['public', 'private'], default: 'public' },
     source: {
       /** 재수집 멱등성의 열쇠. (type, id) 로 upsert 한다 */
@@ -99,6 +116,8 @@ const schema = new Schema<PortfolioDoc>(
 schema.index({ slug: 1 }, { unique: true });
 schema.index({ kind: 1, order: 1 });
 schema.index({ visibility: 1, kind: 1 });
+schema.index({ visibility: 1, kind: 1, tier: 1, order: 1 });
+schema.index({ mergedInto: 1, order: 1 });
 schema.index({ 'source.type': 1, 'source.id': 1 }, { unique: true });
 
 /** 컬렉션 이름은 `portfolio` 다 — 복수형 `portfolios` 가 아니다 */

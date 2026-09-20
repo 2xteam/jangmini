@@ -1,22 +1,29 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DocShell } from '@/components/doc-shell';
-import { ProjectCard } from '@/components/projects/AllProjects';
-import { getProjectList, getTechFacets } from '@/lib/portfolio';
+import { FlagshipCard, ProjectCard, TimelineRow } from '@/components/projects/AllProjects';
+import { getProjectsByTier, getTechFacets } from '@/lib/portfolio';
 
 export const metadata: Metadata = {
   title: '프로젝트 — 장민',
-  description: '2011년부터 지금까지의 프로젝트 45건. 기술 태그로 좁혀 볼 수 있습니다.',
+  description: '대표 프로젝트와 2011년부터의 작업 연표. 기술 태그로 좁혀 볼 수 있습니다.',
 };
 
 export const revalidate = 3600;
 
 /**
- * 프로젝트 아카이브. 45건 전부를 담는다.
+ * 프로젝트 아카이브.
  *
- * 필터를 **URL 쿼리(`?tech=`)로** 두고 서버에서 걸러 온다. 클라이언트 상태로
- * 두면 필터를 걸어 놓은 화면을 링크로 보낼 수 없고, 검색엔진도 필터된 목록을
- * 보지 못한다. 태그 32종은 손으로 관리하지 않고 DB 에서 집계한다.
+ * **세는 목록이 아니라 고르는 목록이다.** 예전에는 46건이 같은 카드로 균일하게
+ * 깔려 있었다. 그러면 12년치 작업 단위가 대표작과 같은 무게로 보여서, 무엇을
+ * 봐야 하는지가 화면에 없다. 지금은 Notion 의 `구분` 을 따라 셋으로 나눈다 —
+ * 대표는 한 줄에 하나씩 요약까지, 개인은 카드로, 연표는 한 줄씩.
+ *
+ * 대표 안으로 합쳐진 원본 22건은 목록에서 빠진다. 문서는 남아 있어서
+ * `/projects/<slug>` 로는 계속 열린다 → lib/portfolio.ts
+ *
+ * 필터는 **URL 쿼리(`?tech=`)** 다. 클라이언트 상태로 두면 필터를 걸어 놓은
+ * 화면을 링크로 보낼 수 없고, 검색엔진도 필터된 목록을 보지 못한다.
  */
 export default async function ProjectsPage({
   searchParams,
@@ -24,8 +31,8 @@ export default async function ProjectsPage({
   searchParams: Promise<{ tech?: string }>;
 }) {
   const { tech } = await searchParams;
-  const [projects, facets] = await Promise.all([
-    getProjectList({ tech }),
+  const [{ flagship, personal, timeline, total }, facets] = await Promise.all([
+    getProjectsByTier(tech),
     getTechFacets(),
   ]);
 
@@ -34,8 +41,8 @@ export default async function ProjectsPage({
       title="프로젝트"
       lead={
         tech
-          ? `${tech} 를 쓴 프로젝트 ${projects.length}건`
-          : `2011년부터 지금까지 ${projects.length}건. 기술 태그로 좁혀 볼 수 있습니다.`
+          ? `${tech} 를 쓴 프로젝트 ${total}건`
+          : `대표 ${flagship.length}건과 개인 프로젝트 ${personal.length}건, 그리고 2011년부터의 작업 ${timeline.length}건.`
       }
       aside={
         <div>
@@ -66,7 +73,7 @@ export default async function ProjectsPage({
         </div>
       }
     >
-      {projects.length === 0 ? (
+      {total === 0 ? (
         <p className="text-muted-foreground text-sm">
           해당 태그의 프로젝트가 없습니다.{' '}
           <Link href="/projects" className="underline underline-offset-4">
@@ -74,17 +81,63 @@ export default async function ProjectsPage({
           </Link>
         </p>
       ) : (
-        <div className="grid gap-3 [&:hover>a:not(:hover)]:opacity-50 sm:grid-cols-2">
+        <div className="space-y-12">
           {/*
             호버한 칸만 남기고 나머지를 흐리게 — laplaya.studio 에서 가져왔다.
-            46건이 균일하게 깔려 있어 눈이 머물 곳이 없었다. 포인터를 올린
-            자리에 초점이 생긴다. 터치 화면에는 호버가 없으니 아무 일도 없다.
+            포인터를 올린 자리에 초점이 생긴다. 터치 화면에는 호버가 없으니
+            아무 일도 일어나지 않는다.
           */}
-          {projects.map((p) => (
-            <ProjectCard key={p.slug} p={p} />
-          ))}
+          {flagship.length > 0 && (
+            <Section title="대표" note="여러 작업을 묶어 한 건으로 정리했습니다">
+              <div className="grid gap-3 [&:hover>a:not(:hover)]:opacity-50">
+                {flagship.map((p) => (
+                  <FlagshipCard key={p.slug} p={p} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {personal.length > 0 && (
+            <Section title="개인 프로젝트" note="업무 밖에서 직접 만든 것들">
+              <div className="grid gap-3 [&:hover>a:not(:hover)]:opacity-50 sm:grid-cols-2">
+                {personal.map((p) => (
+                  <ProjectCard key={p.slug} p={p} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {timeline.length > 0 && (
+            <Section title="연표" note={`2011년부터의 작업 ${timeline.length}건`}>
+              <div className="divide-y [&:hover>a:not(:hover)]:opacity-50">
+                {timeline.map((p) => (
+                  <TimelineRow key={p.slug} p={p} />
+                ))}
+              </div>
+            </Section>
+          )}
         </div>
       )}
     </DocShell>
+  );
+}
+
+function Section({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  note: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div className="mb-4 flex items-baseline gap-3 border-b pb-2">
+        <h2 className="text-lg font-bold tracking-[-0.02em]">{title}</h2>
+        <p className="text-muted-foreground text-xs">{note}</p>
+      </div>
+      {children}
+    </section>
   );
 }

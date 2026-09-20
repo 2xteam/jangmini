@@ -34,6 +34,7 @@ export type ProjectSummary = {
   contribution: number | null;
   featured: boolean;
   imageCount: number;
+  tier: 'flagship' | 'personal' | 'timeline' | 'merged';
 };
 
 const toSummary = (d: PortfolioDoc & { featured?: boolean }): ProjectSummary => ({
@@ -46,20 +47,28 @@ const toSummary = (d: PortfolioDoc & { featured?: boolean }): ProjectSummary => 
   contribution: d.contribution ?? null,
   featured: Boolean(d.featured),
   imageCount: (d.source as { imageCount?: number })?.imageCount ?? 0,
+  tier: d.tier ?? 'timeline',
 });
 
 /** 목록에서 본문을 제외한다 */
 const LIST_FIELDS =
-  'slug title summary company role teamSize period techStack contribution featured category level order source.imageCount overrides';
+  'slug title summary company role teamSize period techStack contribution featured tier category level order source.imageCount overrides';
 
 export async function getProjectList(opts: {
   featuredOnly?: boolean;
   tech?: string;
   company?: string;
   limit?: number;
+  /** 합쳐진 원본까지 볼 때만 true. 기본은 목록에서 뺀다 */
+  includeMerged?: boolean;
 } = {}): Promise<ProjectSummary[]> {
   await connectDb();
   const q: Record<string, unknown> = { ...PUBLIC, kind: 'project' };
+  /**
+   * `합쳐짐` 은 대표 본문 안으로 들어간 원본이다. 목록에 함께 두면 같은
+   * 내용이 두 번 나온다. 문서는 남기고 **목록에서만** 뺀다 — URL 로는 열린다.
+   */
+  if (!opts.includeMerged) q.tier = { $ne: 'merged' };
   if (opts.featuredOnly) q.featured = true;
   /** 태그는 대소문자가 섞여 있다 (NEXT.JS · typescript · React-Native) */
   if (opts.tech) q.techStack = { $regex: `^${escapeRegex(opts.tech)}$`, $options: 'i' };
@@ -71,6 +80,39 @@ export async function getProjectList(opts: {
     .limit(opts.limit ?? 100)
     .lean<(PortfolioDoc & { featured?: boolean })[]>();
   return docs.map((d) => toSummary(merge(d)));
+}
+
+/**
+ * `/projects` 용. 대표 · 개인 · 연표로 나눠 온다.
+ *
+ * 한 번에 읽고 메모리에서 가른다. 세 번 질의하면 왕복이 세 번인데 문서가
+ * 30건 남짓이라 그럴 값어치가 없다.
+ */
+export async function getProjectsByTier(tech?: string) {
+  const all = await getProjectList({ tech, limit: 200 });
+  return {
+    flagship: all.filter((p) => p.tier === 'flagship'),
+    personal: all.filter((p) => p.tier === 'personal'),
+    timeline: all.filter((p) => p.tier === 'timeline'),
+    total: all.length,
+  };
+}
+
+/**
+ * 대표 안으로 들어간 원본들.
+ *
+ * 합본 본문은 새로 썼기 때문에 **화면 이미지가 없다.** 원본에는 있다.
+ * 그래서 대표 페이지는 여기서 원본을 가져와 이미지를 모으고, 원본 기록으로
+ * 내려가는 링크도 함께 건다 — 합쳤다고 해서 12년치 기록을 덮어 버릴 이유는
+ * 없다. 읽는 쪽이 더 파고들 수 있어야 한다.
+ */
+export async function getAbsorbed(slug: string) {
+  await connectDb();
+  const docs = await Portfolio.find({ ...PUBLIC, kind: 'project', mergedInto: slug })
+    .select('slug title period images summary')
+    .sort({ order: 1 })
+    .lean<WithOverrides[]>();
+  return docs.map(merge);
 }
 
 export async function getProject(slug: string) {
@@ -111,7 +153,11 @@ export async function getSkillGroups() {
 export async function getTechFacets(): Promise<{ tech: string; count: number }[]> {
   await connectDb();
   const rows = await Portfolio.aggregate<{ _id: string; count: number }>([
-    { $match: { ...PUBLIC, kind: 'project' } },
+    /**
+     * 합쳐짐은 목록에 없다. 여기서 세면 숫자와 실제로 보이는 건수가 어긋난다 —
+     * "FE 23" 을 눌렀는데 12건만 나오는 식이다.
+     */
+    { $match: { ...PUBLIC, kind: 'project', tier: { $ne: 'merged' } } },
     { $unwind: '$techStack' },
     { $group: { _id: '$techStack', count: { $sum: 1 } } },
     { $sort: { count: -1, _id: 1 } },

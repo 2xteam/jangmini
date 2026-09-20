@@ -27,7 +27,14 @@ const OUT_DIR = 'tmp-ingest';
  * 문서를 못 찾고 새로 넣으려다 slug 유니크 인덱스에 걸린다.
  * → scripts/switch-notion-source.mjs
  */
-const ROOT_PAGE = '3dcdca69-72b8-809a-8858-ca809186e6e2';
+/**
+ * 소개와 경력의 원본.
+ *
+ * '장민 / 포트폴리오 New' 의 겉표지가 아니라 그 안의 **'신규'** 페이지다.
+ * 2026-09 에 이력서를 한 장으로 다시 쓰면서 여기로 옮겼고, 사이트는 이
+ * 페이지만 읽는다 — 소개를 두 곳에서 관리하면 반드시 어긋난다.
+ */
+const ROOT_PAGE = '3dcdca69-72b8-80f8-8dfb-d31c0a6d0db2';
 /** 인라인 DB 두 개 */
 const DB_HISTORY = 'db5dca69-72b8-834d-896c-013f4a82615c'; // 포트폴리오 이력
 const DB_RESOURCE = '082dca69-72b8-82e2-b3a2-813745afc343'; // 포트폴리오 리소스

@@ -27,11 +27,13 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function ResumePage() {
-  const [profile, experiences, featured, skillGroups, education, certificates, activities, timeline] =
+  const [profile, experiences, featured, listed, skillGroups, education, certificates, activities, timeline] =
     await Promise.all([
       getProfile(),
       getByKind('experience'),
       getProjectList({ featuredOnly: true }),
+      /** 목록에 실제로 보이는 건수. 합쳐진 원본은 빠진다 */
+      getProjectList({ limit: 200 }),
       getSkillGroups(),
       getByKind('education'),
       getByKind('certificate'),
@@ -131,7 +133,7 @@ export default async function ResumePage() {
         title="대표 프로젝트"
         action={
           <Link href="/projects" className="text-muted-foreground text-sm hover:underline">
-            전체 45건 →
+            전체 {listed.length}건 →
           </Link>
         }
       >

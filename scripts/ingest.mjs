@@ -77,7 +77,87 @@ const SIDE_PROJECT_KEYS = ['Ignite Architecture', 'SnapApps', '함히보까', '�
  * 대표로 올리려면 여기에 id 한 줄을 더한다 — id 는 admin 콘텐츠 탭이나
  * Notion 페이지 URL 끝에서 볼 수 있다.
  */
+/**
+ * Notion `구분` → 사이트의 계층.
+ *
+ * 2026-09 재구성에서 46건을 셋으로 나눴다. 46건이 한 줄씩 깔려 있으면 무엇을
+ * 봐야 하는지가 화면에 없다 — 세는 목록이 아니라 고르는 목록이어야 한다.
+ *
+ *   대표   합본 4건. 크게 조판한다
+ *   개인   사이드 3건. 따로 묶는다
+ *   연표   한 줄씩. 12년치 작업 단위다
+ *   합쳐짐 대표 안으로 들어간 원본. **목록에서 빼되 지우지 않는다** —
+ *          밖으로 나간 링크가 있고, 원본 기록 자체는 남겨야 한다.
+ *          `/projects/<slug>` 로는 계속 열린다.
+ *
+ * 구분이 비어 있으면 연표로 둔다. 새 글을 썼을 때 조용히 사라지는 것보다
+ * 목록 맨 아래에 나타나는 편이 알아차리기 쉽다.
+ */
+const TIERS = { 대표: 'flagship', 개인: 'personal', 연표: 'timeline', 합쳐짐: 'merged' };
+const tierOf = (row) => TIERS[row.properties?.['구분']?.select?.name] ?? 'timeline';
+
+/**
+ * 어느 원본이 어느 대표 안으로 들어갔는가.
+ *
+ * `구분 = 합쳐짐` 은 "목록에서 뺀다" 까지만 말해 준다. 어디로 들어갔는지는
+ * Notion 에 적혀 있지 않아서 여기에 둔다 — 그래야 대표 페이지에서 원본으로
+ * 내려갈 수 있고, **원본의 화면 이미지를 대표가 물려받을 수 있다.**
+ * (합본 페이지에는 이미지가 없다. 본문만 새로 썼다.)
+ *
+ * Notion 페이지 id 로 건다. 제목으로 걸면 제목을 다듬는 순간 끊긴다 —
+ * 실제로 제목 4건에 U+00A0 이 섞여 있어서 한 번 조용히 어긋났다.
+ */
+const ABSORBS = {
+  'legacy-modernization': [
+    'd13dca69-72b8-8278-bb01-8117934855ea', // ASP.NET FE & BE 분리
+    '1aedca69-72b8-8352-9f2e-81bd7b046209', // Common Script 빌드 개선
+    'd99dca69-72b8-8244-9591-81b2eba37ad0', // MultiRepo > MonoRepo
+    '97adca69-72b8-8306-b6d0-817078e6e550', // Vanila Js React 전환
+    'bdbdca69-72b8-83a4-a859-81c039010129', // NEXT.JS 리펙토링
+  ],
+  'logistics-wms-oms': [
+    '065dca69-72b8-82c6-8914-81529dfaea38', // WMS UI
+    '33fdca69-72b8-833f-8ad6-01dc78e2ff4a', // OMS 기업 주문·주소록
+    '5efdca69-72b8-83aa-a93c-8145f29f4385', // 배포 프로세스 개선
+    '4bfdca69-72b8-83a3-967b-81da4cef2e28', // 배포 접근성
+    'f98dca69-72b8-82e4-9e76-01de19e83395', // FE 로컬 도메인 분리
+  ],
+  'ai-agent-admin': [
+    '00cdca69-72b8-820d-b630-81fc0aa002dc', // TracX AI Agent
+    '1b9dca69-72b8-8344-8c92-01c38dc7f85b', // 배송비 Admin UX
+    'c74dca69-72b8-826c-8862-01f6e9c9f7f6', // 배송비 Next.js 리펙토링
+  ],
+  'commerce-platform-modules': [
+    '946dca69-72b8-8352-97b1-81839336d458', // 공통 공유 레이어
+    '62fdca69-72b8-83f6-8e51-0149e43ccc36', // Item Picker
+    'b01dca69-72b8-83cc-91e0-01fd9e0412fa', // Admin Grid
+    'b86dca69-72b8-8231-9707-81146f201a75', // Dynamic Proxy API
+    'bd9dca69-72b8-8325-8577-810fa7c83a67', // Profiler
+    '25adca69-72b8-82a3-a1e5-01c8fe6da76a', // 게시판
+    '6f1dca69-72b8-83d6-b78e-814216b32269', // 룰렛
+    '0dadca69-72b8-8355-8b91-81c4bd33973e', // 설문조사
+    '299dca69-72b8-823f-a8d4-01cbf1c02756', // 판매자 커스텀 페이지
+  ],
+};
+
+/** Notion 페이지 id → 그것을 흡수한 대표의 슬러그 */
+const ABSORBED_BY = Object.fromEntries(
+  Object.entries(ABSORBS).flatMap(([slug, ids]) => ids.map((id) => [id, slug])),
+);
+
 const PINNED = [
+  /**
+   * 대표 4건(합본). **슬러그를 반드시 고정한다** — 제목이 길고 한글이라
+   * 자동 변환하면 `regeosi-hyeondaehwa-asp-net-eseo-react` 같은 URL 이 된다.
+   * 읽을 수 없고, 제목을 다듬으면 또 바뀐다.
+   *
+   * `featured` 는 여기서 정하지 않는다. Notion 의 `구분` 이 원본이다.
+   */
+  { id: '3dcdca69-72b8-811b-9ac5-ebda68d3e7f2', slug: 'legacy-modernization' },
+  { id: '3dcdca69-72b8-8107-9d51-ffb41e026f02', slug: 'logistics-wms-oms' },
+  { id: '3dcdca69-72b8-8116-84c9-d9f1208ab00b', slug: 'ai-agent-admin' },
+  { id: '3dcdca69-72b8-8119-ba9d-cb1e05c6f601', slug: 'commerce-platform-modules' },
+
   { id: '9dedca69-72b8-8216-8820-81ad99c6c6d1', slug: 'ignite-architecture', featured: true, why: '사이드 · 건축사무소 브랜딩. 기획~납품 전 과정' },
   { id: '00cdca69-72b8-820d-b630-81fc0aa002dc', slug: 'tracx-ai-agent', featured: true, why: '트랙스로지스 AI · RAG + Tool Calling' },
   { id: '28bdca69-72b8-82c5-a2d4-81335bdf946f', slug: 'snapapps', featured: true, why: '사이드 · SnapWord/SnapNote 시리즈' },
@@ -153,6 +233,30 @@ function push(doc) {
 
 /* ══════════════ 1. 프로젝트 ══════════════════════════════════ */
 
+/**
+ * 채움 자리를 걷어낸다.
+ *
+ * 줄 전체가 채움 자리인 불릿은 줄째로 지운다 — 빈 불릿(`-`)이 남으면 그게 더
+ * 이상하다. 문장 중간에 끼어 있으면 그 조각만 뺀다.
+ */
+/**
+ * 채움 자리가 든 줄을 걷어낸다.
+ *
+ * **조각만 빼지 않고 줄째로 뺀다.** 문장 한가운데 있는 것을 지우면
+ * "관리 포인트를  로 줄였습니다" 같은 깨진 문장이 남는다. 채움 자리가
+ * 있다는 것은 그 줄이 아직 끝나지 않았다는 뜻이므로, 내보내지 않는 것이 맞다.
+ *
+ * Notion 은 대괄호를 `\\[` 로 이스케이프해 내려준다 — 그래서 앞뒤의
+ * 역슬래시까지 함께 집는다. 안 그러면 줄에 `\\` 하나가 남는다.
+ */
+const PLACEHOLDER = /\\?\[(?:숫자|한계|이유|결정)[^\]]*\\?\]/;
+function stripPlaceholders(md) {
+  return md
+    .split('\n')
+    .filter((line) => !PLACEHOLDER.test(line))
+    .join('\n');
+}
+
 const rows = read('rows-history.json');
 const bodies = read('bodies.json');
 const bodyById = Object.fromEntries(bodies.map((b) => [b.id, b]));
@@ -187,16 +291,32 @@ const projectRows = rows
 projectRows.forEach(({ row, body }, i) => {
   const title = titleOf(row).trim();
   const props = row.properties;
+  const tier = tierOf(row);
   const date = props['기간']?.date ?? {};
 
   const { body: noImages, images } = extractImages(body.markdown);
-  const cleaned = cleanMarkdown(noImages);
+  /**
+   * `[숫자: …]` 같은 채움 자리를 사이트에 내보내지 않는다.
+   *
+   * Notion 에서는 이게 **필요한 표시다** — 지어낸 숫자를 넣는 대신 사람이
+   * 채우라고 남겨 둔 자리다. 그런데 그대로 공개되면 "아직 안 쓴 이력서" 로
+   * 읽힌다. 그래서 원본은 그대로 두고 **내보낼 때만** 걷어낸다.
+   * 무엇이 남았는지는 아래 경고로 알려 준다.
+   */
+  const placeholders = noImages.split(/\r?\n/).filter((l) => PLACEHOLDER.test(l));
+  const cleaned = cleanMarkdown(stripPlaceholders(noImages));
   const links = extractLinks(noImages);
   const sections = splitSections(cleaned);
 
+  /**
+   * 양식이 둘이다. 합본 4건은 새 양식(개요/문제/나의 역할과 결정/결과/회고),
+   * 나머지는 옛 양식(개요/나의 역할/성과 및 결과/회고)을 쓴다. 옛 문서를
+   * 전부 새 양식으로 옮길 이유가 없어서 **둘 다 읽는다.**
+   */
   const overview = sections['개요'] ?? '';
-  const roleSec = sections['나의 역할'] ?? '';
-  const resultSec = sections['성과 및 결과'] ?? '';
+  const roleSec = sections['나의 역할과 결정'] ?? sections['나의 역할'] ?? '';
+  const resultSec = sections['결과'] ?? sections['성과 및 결과'] ?? '';
+  const problem = sections['문제'] ?? '';
   const retro = sections['회고'] ?? '';
 
   const role = bulletsUnder(roleSec, '직위 및 역할')[0] ?? null;
@@ -222,8 +342,12 @@ projectRows.forEach(({ row, body }, i) => {
    */
   const summary = pickSummary(overview, sections['__intro__']) || null;
 
+  if (placeholders.length) {
+    warnings.push(`채움 자리 ${placeholders.length}곳을 사이트에서 감췄습니다 (Notion 에서 채우세요): ${title}`);
+  }
   if (!overview) warnings.push(`개요 섹션 없음(도입부로 대체): ${title}`);
   if (!highlights.length) warnings.push(`성과 불릿 없음: ${title}`);
+  if (tier === 'flagship' && !problem) warnings.push(`대표인데 문제 절이 없음: ${title}`);
 
   push({
     kind: 'project',
@@ -246,8 +370,15 @@ projectRows.forEach(({ row, body }, i) => {
     /** 이미지는 R2 재호스팅 단계에서 채운다. 만료 URL 을 저장하지 않는다 */
     images: [],
     order: i,
-    /** `/resume` 에 싣는 대표 프로젝트 → PINNED 주석 참고 */
-    featured: Boolean(pinnedOf(row.id)?.featured),
+    tier,
+    /** 합쳐짐이면 어느 대표로 들어갔는지. 대표 페이지가 이걸로 원본을 모은다 */
+    mergedInto: ABSORBED_BY[row.id] ?? null,
+    /**
+     * 대표 여부의 원본은 이제 Notion 의 `구분` 이다. 예전에는 PINNED 목록이
+     * 원본이었는데, 그러면 Notion 에서 대표를 바꿔도 코드를 고쳐야 했다.
+     * PINNED 는 슬러그 고정 용도로만 남는다.
+     */
+    featured: tier === 'flagship',
     visibility: 'public',
     source: {
       type: 'notion',
@@ -369,7 +500,33 @@ for (const s of resumeOnly) {
 /* ══════════════ 3. 프로필 · 경력 (Notion 루트) ═══════════════ */
 
 const root = read('root.json');
-const rootMd = cleanMarkdown(extractImages(root.markdown).body);
+/**
+ * 원본은 Notion 의 이력서 한 장('신규')이다. 조판용 표시가 섞여 오므로 걷어낸다.
+ *
+ *   <callout>    "채울 곳이 남아 있습니다" — 나에게 남긴 메모다. 공개면 안 된다
+ *   <columns>    좌우 2단. 웹에서는 한 줄로 흐르면 된다
+ *   휴대폰 번호   ⚠️ **절대 내보내지 않는다.** Notion 문서에는 적혀 있다 —
+ *                인사담당자에게 직접 건네는 PDF 니까. 공개 사이트는 다르다.
+ *                연락은 이메일로 받고, 번호가 필요하면 그때 주면 된다.
+ */
+const stripNotionChrome = (md) =>
+  md
+    .replace(/\<callout[^\>]*\>[\s\S]*?\<\/callout\>/g, '')
+    /**
+     * 사진이 든 칼럼은 통째로 버린다.
+     *
+     * 좌우 2단 중 오른쪽은 사진·이름·한 줄 소개·연락처를 모아 둔 **명함**이다.
+     * PDF 로 뽑을 때는 필요하지만 사이트에는 이미 머리말과 링크로 있다.
+     * 이미지 표시가 살아 있는 지금 걸러야 한다 — extractImages 가 지우고 나면
+     * 어느 칼럼이 명함이었는지 알 수 없다.
+     */
+    .replace(/\<column\>(?:(?!\<\/column\>)[\s\S])*!\[(?:(?!\<\/column\>)[\s\S])*\<\/column\>/g, '')
+    .replace(/\<\/?(?:columns|column)\>/g, '')
+    .replace(/0\d{1,2}[- ]?\d{3,4}[- ]?\d{4}/g, '')
+    .replace(/^\s*>\s*\*\*장민\*\*[^\n]*$/gm, '')
+    .replace(/^\s*-{3,}\s*$/gm, '');
+
+const rootMd = cleanMarkdown(extractImages(stripNotionChrome(root.markdown)).body);
 
 /**
  * 프로필 본문 — 루트 페이지에서 `## 경력` 앞까지다.
@@ -382,9 +539,22 @@ const rootMd = cleanMarkdown(extractImages(root.markdown).body);
  * 그래서 **경력 헤딩을 기준으로** 자른다. 소개 문장은 이력서 docx 쪽이 더
  * 온전하므로 아래에서 그걸 앞에 붙인다.
  */
+/**
+ * 병역 한 줄.
+ *
+ * Notion 에서는 '학력 · 자격 · 병역' 묶음 안에 있는데, 사이트는 학력과
+ * 자격을 이력서 docx 에서 따로 읽는다. 병역만 갈 곳이 없어서 소개 본문 끝에
+ * `### 병역` 으로 붙여 둔다 — `/resume` 의 05 절이 거기서 꺼내 쓴다.
+ * 기본 사항이라 빼지 않는다 (2026-09-15 사용자 확인).
+ */
+const militaryLine =
+  rootMd.split(/\r?\n/).find((l) => /^\s*[-*]\s+.*(?:제대|병역|복무|면제)/.test(l)) ?? '';
+const militarySection = militaryLine ? `### 병역\n${militaryLine.trim()}` : '';
+
 const rootIntro = rootMd
   .split(/^##\s*경력/m)[0]
-  .replace(/^##\s*/m, '')
+  /** `## 소개` 는 줄째로 없앤다 — 접두사만 지우면 '소개' 한 낱말이 본문에 남는다 */
+  .replace(/^##\s*[^\n]*$/gm, '')
   /** Notion 이 줄바꿈을 `<br>` 로 준다 */
   .replace(/<br\s*\/?>/gi, ' ')
   /**
@@ -461,7 +631,16 @@ push({
   slug: uniqueSlug('profile', usedSlugs),
   title: '장민',
   summary: 'Full Stack Developer',
-  body: profileManual.body ?? [aboutFromResume, rootIntro].filter(Boolean).join('\n\n'),
+  /**
+   * 소개의 원본은 **Notion '신규' 페이지 하나**다.
+   *
+   * 예전에는 이력서 docx 의 자기소개를 앞에 붙였다. 그 글이 "저는 10년간
+   * ASP.NET…" 으로 시작해서 2026년에 읽으면 낡아 보였고, Notion 을 다시 쓴
+   * 뒤로는 같은 이야기가 두 번 나왔다. 이제 Notion 쪽만 쓴다.
+   * (`content/profile-manual.json` 의 body 도 같은 이유로 걷어냈다 —
+   * 두 곳에 두면 Notion 을 고쳐도 사이트가 안 바뀐다.)
+   */
+  body: profileManual.body ?? [rootIntro, militarySection].filter(Boolean).join('\n\n'),
   techStack: [],
   highlights: [],
   /**
@@ -598,6 +777,11 @@ if (expOrder === 0) warnings.push('루트 페이지에서 경력 블록을 찾�
       links: m.links ?? [],
       /** 이미 R2 에 올린 URL 이다 → pnpm shots:upload */
       images: m.images ?? [],
+      /**
+       * 손등록은 Notion 의 `구분` 이 없다. 여기 들어오는 것은 업무 밖에서
+       * 만든 것뿐이라 개인으로 둔다 — 파일에서 덮을 수 있다.
+       */
+      tier: m.tier ?? 'personal',
       featured: Boolean(m.featured),
       /**
        * order 는 아래 정렬 단계에서 다시 매긴다. Notion 것과 섞어 최신순으로
