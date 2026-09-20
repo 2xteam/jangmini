@@ -19,17 +19,32 @@ import { cookies } from 'next/headers';
  * 평문 쿠키를 믿지 않는다. `payload.sig` 형태로 HMAC-SHA256 서명을 붙이고,
  * 비교는 **timing-safe** 로 한다.
  *
- * ## admin 은 TTL 이 짧다
+ * ## admin 세션은 만료시키지 않는다 (2026-09-20 사용자 지시)
  *
- * `readers.role` 로 admin 을 구분하므로(사용자 결정) reader 비밀번호가 곧
- * admin 권한이다. 그래서 admin 세션은 2시간, reader 는 30일이다. 게다가
- * `/admin` 진입 시 비밀번호를 한 번 더 확인한다 → src/models/Reader.ts
+ * 원래는 admin 세션 2시간 + 비밀번호 재확인 10분이었다. 이력서를 고치는 일은
+ * 한 번에 길게 앉아서 하는 작업이라 **문장을 쓰는 도중에 튕겨 나갔다.**
+ * 쓰던 내용을 잃는 것이 실제로 반복해서 일어났다.
+ *
+ * ⚠️ **맞바꾼 것을 분명히 적어 둔다.** `readers.role` 로 admin 을 구분하므로
+ * 이 계정의 비밀번호가 곧 admin 권한이고, 이제 쿠키를 한 번 받은 기기는
+ * 사실상 영구히 admin 이다. 기기를 잃었거나 쿠키가 샜다고 판단되면
+ * **`SESSION_SECRET` 을 새로 발급**해야 한다 — 그러면 이미 나간 쿠키가
+ * 전부 한꺼번에 무효가 된다. 로그아웃만으로는 그 기기 하나뿐이다.
+ *
+ * 되돌리려면 아래 `ADMIN_TTL_SEC` 와 `STEP_UP_WINDOW_MS` 두 상수만 원래대로
+ * 돌리면 된다. 다른 곳은 손대지 않았다.
  */
 
 export const COOKIE_NAME = 'jangmini_reader';
 
 const READER_TTL_SEC = 30 * 24 * 60 * 60;
-const ADMIN_TTL_SEC = 2 * 60 * 60;
+/**
+ * admin 세션 수명. 예전 값은 `2 * 60 * 60` (2시간).
+ *
+ * 쿠키에 '무한' 은 없다 — `Max-Age` 는 숫자여야 한다. 10년이면 사실상
+ * 만료되지 않는다.
+ */
+const ADMIN_TTL_SEC = 10 * 365 * 24 * 60 * 60;
 
 export type ReaderSession = {
   readerId: string;
@@ -131,11 +146,21 @@ export async function sessionFromCookies(): Promise<ReaderSession | null> {
   return parseSession(store.get(COOKIE_NAME)?.value);
 }
 
-/** `/admin` 은 비밀번호 재확인이 10분 안에 있어야 들어갈 수 있다 */
-export const STEP_UP_WINDOW_MS = 10 * 60 * 1000;
+/**
+ * 비밀번호 재확인의 유효 기간.
+ *
+ * 예전 값은 10분이었고, **이것이 편집 중에 튕기던 진짜 원인**이었다. 한
+ * 문장을 오래 붙들고 있으면 저장 버튼을 누르는 순간 창이 이미 닫혀 있었다.
+ *
+ * `null` 이면 만료를 보지 않는다 — 한 번 확인했으면 계속 유효하다.
+ * 다시 조이려면 밀리초를 넣으면 된다 (예: `12 * 60 * 60 * 1000`).
+ */
+export const STEP_UP_WINDOW_MS: number | null = null;
 
 export function isAdminReady(s: ReaderSession | null): boolean {
   if (!s || s.role !== 'admin') return false;
+  /** 재확인 자체는 여전히 필요하다 — 한 번도 안 했으면 못 들어간다 */
   if (!s.stepUpAt) return false;
+  if (STEP_UP_WINDOW_MS === null) return true;
   return Date.now() - s.stepUpAt < STEP_UP_WINDOW_MS;
 }
