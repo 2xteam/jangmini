@@ -82,7 +82,7 @@ const PINNED = [
   { id: '00cdca69-72b8-820d-b630-81fc0aa002dc', slug: 'tracx-ai-agent', featured: true, why: '트랙스로지스 AI · RAG + Tool Calling' },
   { id: '28bdca69-72b8-82c5-a2d4-81335bdf946f', slug: 'snapapps', featured: true, why: '사이드 · SnapWord/SnapNote 시리즈' },
   { id: '065dca69-72b8-82c6-8914-81529dfaea38', slug: 'wms-pda-scanner', featured: true, why: 'React Native PDA 스캐너 · 현장 검증' },
-  { id: '33fdca69-72b8-833f-8ad6-01dc78e2ff4a', slug: 'sirloin-oms', featured: true, why: '설로인 OMS · API 호출 99% 감소' },
+  { id: '33fdca69-72b8-833f-8ad6-01dc78e2ff4a', slug: 'sirloin-oms', featured: true, why: '설로인 OMS · 불필요 조회 제거와 진행 표시' },
   { id: 'd13dca69-72b8-8278-bb01-8117934855ea', slug: 'aspnet-fe-be-split', featured: true, why: '.NET → React 전환' },
   /**
    * AI 작업으로 소개하지 않는다. 이력서 기술스택에 OpenAI 가 적혀 있지만

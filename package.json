@@ -19,7 +19,10 @@
     "warm": "node scripts/warm-answers.mjs",
     "shots:upload": "node scripts/upload-shots.mjs",
     "notion:switch": "node scripts/switch-notion-source.mjs",
-    "notion:restructure": "node scripts/notion-restructure.mjs"
+    "notion:restructure": "node scripts/notion-restructure.mjs",
+    "notion:resume": "node scripts/notion-write-resume.mjs",
+    "notion:counts": "node scripts/notion-fill-counts.mjs",
+    "notion:drop99": "node scripts/notion-drop-99.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",
