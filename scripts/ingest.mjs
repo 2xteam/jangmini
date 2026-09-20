@@ -403,6 +403,14 @@ projectRows.forEach(({ row, body }, i) => {
     order: i,
     tier,
     todos,
+    /**
+     * 채울 자리가 **살아 있는** 본문. admin 이 이걸 그려 놓고 그 자리에
+     * 입력칸을 꽂는다 — 앞뒤 문맥이 보여야 무엇을 쓸지 정할 수 있다.
+     *
+     * 채울 자리가 없으면 저장하지 않는다. 공개 본문과 똑같은 값을 47건에
+     * 두 벌씩 들고 있을 이유가 없다.
+     */
+    rawBody: todos.length ? cleanMarkdown(noImages) : null,
     /** 합쳐짐이면 어느 대표로 들어갔는지. 대표 페이지가 이걸로 원본을 모은다 */
     mergedInto: ABSORBED_BY[row.id] ?? null,
     /**

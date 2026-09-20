@@ -6,7 +6,7 @@ import { fillPlaceholder, dropPlaceholderLine } from '@/lib/notion-write';
 /**
  * 못 채운 자리를 모아 주고, 채운 값을 Notion 에 되쓴다.
  *
- * GET                                   남은 자리 전부 (문서 순 · 절 순)
+ * GET                                   문서별 본문 + 남은 자리
  * PATCH { slug, line, action, value }   채우거나(fill) 지운다(drop)
  *
  * **쓰기는 Notion 으로 간다.** 사이트 DB 에만 채우면 Notion 은 빈 채로 남고,
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
   await connectDb();
 
   const docs = await Portfolio.find({ 'todos.0': { $exists: true } })
-    .select('slug title kind tier todos order source.id source.type')
+    .select('slug title kind tier todos rawBody order source.id source.type')
     .sort({ order: 1 })
     .lean<
       {
@@ -45,27 +45,30 @@ export async function GET(req: Request) {
         kind: string;
         tier?: string;
         todos: Todo[];
+        rawBody?: string | null;
         source?: { id?: string; type?: string };
       }[]
     >();
 
-  const items = docs.flatMap((d) =>
-    (d.todos ?? []).map((t, i) => ({
+  /**
+   * **본문을 통째로 준다.**
+   *
+   * 채울 자리만 따로 보여 주면 무엇을 써야 할지 정할 수가 없다 — "당시 팀
+   * 규모" 라는 힌트만 봐서는 어느 프로젝트의 어느 대목인지 감이 안 온다.
+   * 앞뒤 문장이 보여야 한다. 그래서 화면은 본문을 그대로 그려 놓고 그 자리에
+   * 입력칸을 꽂는다.
+   */
+  return Response.json({
+    docs: docs.map((d) => ({
       slug: d.slug,
       title: d.title,
       tier: d.tier ?? null,
       /** Notion 페이지가 아니면 되쓸 곳이 없다. 화면에서 안내만 한다 */
       editable: d.source?.type === 'notion',
-      index: i,
-      ...t,
+      body: d.rawBody ?? '',
+      todos: d.todos ?? [],
     })),
-  );
-
-  return Response.json({
-    items,
-    total: items.length,
-    /** 문서별 남은 수 — 목록에서 "이 프로젝트 3곳" 을 보여준다 */
-    byDoc: docs.map((d) => ({ slug: d.slug, title: d.title, left: (d.todos ?? []).length })),
+    total: docs.reduce((n, d) => n + (d.todos ?? []).length, 0),
   });
 }
 
@@ -91,6 +94,7 @@ export async function PATCH(req: Request) {
   const doc = await Portfolio.findOne({ slug }).lean<{
     _id: unknown;
     body?: string;
+    rawBody?: string | null;
     todos?: Todo[];
     source?: { id?: string; type?: string };
   }>();
@@ -122,11 +126,24 @@ export async function PATCH(req: Request) {
 
   /* ── 2. DB 를 맞춘다 ── */
   const nextTodos = (doc.todos ?? []).filter((t) => t.line !== line);
-  const nextBody = action === 'fill' ? insertIntoSection(doc.body ?? '', todo.section, after) : (doc.body ?? '');
+  const nextBody =
+    action === 'fill' ? insertIntoSection(doc.body ?? '', todo.section, after) : (doc.body ?? '');
+
+  /**
+   * 편집용 본문도 같이 고친다 — 화면이 이걸 그린다. 안 고치면 방금 채운
+   * 자리에 입력칸이 그대로 남아 "저장이 안 된 건가" 로 보인다.
+   */
+  const rawLines = (doc.rawBody ?? '').split('\n');
+  const hitAt = rawLines.findIndex((l) => l.trim() === todo.line.trim());
+  if (hitAt >= 0) {
+    if (action === 'drop') rawLines.splice(hitAt, 1);
+    else rawLines[hitAt] = (todo.whole ? '- ' : '') + after;
+  }
+  const nextRaw = nextTodos.length ? rawLines.join('\n') : null;
 
   await Portfolio.updateOne(
     { slug },
-    { $set: { todos: nextTodos, body: nextBody, updatedAt: new Date() } },
+    { $set: { todos: nextTodos, body: nextBody, rawBody: nextRaw, updatedAt: new Date() } },
   );
 
   return Response.json({ ok: true, left: nextTodos.length, after });

@@ -58,6 +58,8 @@ export type PortfolioDoc = {
    * 본문에서는 이 줄을 빼고 내보내지만 목록은 남긴다 — admin 이 이걸 읽어
    * "다음 채울 곳" 으로 데려간다. 없으면 47건을 사람이 뒤져야 한다.
    */
+  /** 채울 자리가 살아 있는 본문. `todos` 가 있을 때만 있다 */
+  rawBody?: string | null;
   todos?: {
     section: string;
     hint: string;
@@ -114,6 +116,7 @@ const schema = new Schema<PortfolioDoc>(
     order: { type: Number, default: 0 },
     tier: { type: String, enum: ['flagship', 'personal', 'timeline', 'merged'] },
     mergedInto: { type: String, default: null },
+    rawBody: { type: String, default: null },
     todos: {
       type: [{ _id: false, section: String, hint: String, kindLabel: String, line: String, whole: Boolean }],
       default: [],
