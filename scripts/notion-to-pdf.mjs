@@ -136,6 +136,20 @@ async function render(blockId) {
       case 'divider':
         out.push('<hr>');
         break;
+      case 'column_list': {
+        /**
+         * 2단. Notion 에서 인적사항 표와 증명사진을 나란히 두는 데 쓴다.
+         * 인쇄에서는 flex 한 줄로 그리고, 칼럼 비율을 그대로 폭에 반영한다.
+         */
+        const { results: cols = [] } = await api(`/blocks/${b.id}/children?page_size=20`);
+        const cells = [];
+        for (const col of cols) {
+          const ratio = col.column?.width_ratio ?? 1 / cols.length;
+          cells.push(`<div class="col" style="flex:${ratio}">${await render(col.id)}</div>`);
+        }
+        out.push(`<div class="cols">${cells.join('')}</div>`);
+        break;
+      }
       case 'image': {
         /**
          * 증명사진. 오른쪽으로 띄워 인적사항 표가 그 옆으로 흐르게 한다.
@@ -218,7 +232,11 @@ const html = `<!doctype html>
   tr { break-inside: avoid; }
   /* 첫 표(보유 기술)와 요건 표는 첫 열을 좁게 */
   table td:first-child, table th:first-child { width: 26%; }
-  .photo { float: right; width: 26mm; margin: 0 0 6pt 10pt; border: .6pt solid #d6dbe0; }
+  .photo { width: 100%; max-width: 26mm; border: .6pt solid #d6dbe0; }
+  .cols { display: flex; gap: 8pt; align-items: flex-start; break-inside: avoid; }
+  .cols .col { min-width: 0; }
+  /* 2단 안의 사진은 칼럼 폭에 맞춘다 */
+  .cols .photo { float: none; margin: 0; }
   /* 사진 옆으로 흐른 뒤 다음 절은 아래에서 시작 */
   h1, h2, hr { clear: both; }
 </style>
