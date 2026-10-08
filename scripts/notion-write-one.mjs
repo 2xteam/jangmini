@@ -56,6 +56,9 @@ try {
   process.exit(1);
 }
 
+const PHOTO =
+  'https://pub-b6ba1f5f07ef4f8c9be1a32f6beccf5c.r2.dev/profile/profile/1-9bd41f65033a.png';
+
 const H = {
   Authorization: `Bearer ${process.env.NOTION_TOKEN}`,
   'Notion-Version': NOTION_VERSION,
@@ -99,12 +102,12 @@ const callout = (t, emoji = '📌') => ({
 const quote = (t) => ({ object: 'block', type: 'quote', quote: { rich_text: rich(t) } });
 
 /** 표. 첫 행은 머리글 */
-const table = (rows) => ({
+const table = (rows, header = true) => ({
   object: 'block',
   type: 'table',
   table: {
     table_width: rows[0].length,
-    has_column_header: true,
+    has_column_header: header,
     has_row_header: false,
     children: rows.map((cells) => ({
       object: 'block',
@@ -119,7 +122,31 @@ const table = (rows) => ({
 const C = P.companies;
 
 const blocks = [
-  ),
+  /* ── 인적사항 (첫 장 최상단) ── */
+  h2('인 적 사 항'),
+  /**
+   * 증명사진. Notion 이 보관한 파일은 만료되는 서명 URL 이라 R2 사본을
+   * external 로 건다. PDF 변환기가 오른쪽으로 띄워 표가 옆으로 흐른다.
+   */
+  { object: 'block', type: 'image', image: { type: 'external', external: { url: PHOTO } } },
+  /**
+   * '지원 포지션' 을 첫 줄에 둔다. 리크루터를 거쳐 가는 문서라 인사담당자
+   * 손에 닿을 때 메일 본문과 떨어질 수 있고, 여러 공고를 동시에 돌리는
+   * 담당자에게 어느 건인지 한 줄이 실제로 쓸모가 있다. 맨 위 배너로 두면
+   * 이력서가 아니라 지원서처럼 보여서 표 안으로 내렸다.
+   */
+  table([
+    ['지원 포지션', 'ONE Tech Stop Pte. Ltd.  /  Web Application 개발 및 운영 (EDI/API Monitoring System)'],
+    ['성명', `${P.name} (Jang Min)`],
+    ['생년월일', '1986. 05. 04'],
+    ['연락처', `${P.phone}  /  2xteam@naver.com`],
+    ['주소', P.address ?? '—'],
+    ['최종학력', '전주대학교 미디어정보학부 졸업 (2005.03 ~ 2012.02) · 복수전공 문화기술'],
+    ['병역', '육군 병장 만기전역 (2006.03 ~ 2008.03)'],
+    ['총 경력', '14년 8개월 (풀스택 개발)'],
+    ['포트폴리오', 'jangmini.myjane.co.kr'],
+  ], false),
+  divider(),
 
   /* ── 1. 핵심역량 (첫 페이지 최상단) ── */
   h1('핵심역량 및 보유기술'),
