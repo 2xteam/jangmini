@@ -13,7 +13,7 @@
  * 변환은 Edge 헤드리스(`--print-to-pdf`)를 쓴다. 윈도우에 기본으로 깔려 있고
  * 한글 글꼴을 그대로 쓴다. Word COM 으로도 되지만 표 폭이 자주 깨진다.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -191,17 +191,45 @@ const title =
     ?.title?.map((t) => t.plain_text)
     .join('') ?? '이력서';
 
+/**
+ * 옛 이력서 PDF 1쪽에서 머리글이 차지하는 네모.
+ *
+ * 쪽 왼쪽 아래를 원점으로 한 **PDF 포인트**다 (A4 = 595.28 × 841.89pt).
+ * 눈대중이 아니라 1쪽을 2000px 로 렌더링해 흰 줄을 찾아 **재서** 얻었다 —
+ *   powershell -NoProfile -File scripts/forms/header-image.ps1
+ * 이 스크립트가 `x 118~1874 · y 136~624` (2000×2827px) 를 찍어 준다.
+ * 아래 경계는 측정값(624)보다 올린 540 이다 — 624 로 자르면 다음 절 제목
+ * (소개 / About Me)이 함께 딸려 온다.
+ * 원본 PDF 를 다시 뽑았다면 그것을 돌려 이 값을 고친다.
+ */
+const A4_W = 595.28;
+const A4_H = 841.89;
+const PT_PER_PX = A4_W / 2000;
+const HEAD_BOX = {
+  left: 118 * PT_PER_PX,
+  right: 1874 * PT_PER_PX,
+  top: A4_H - 136 * PT_PER_PX,
+  bottom: A4_H - 540 * PT_PER_PX,
+};
+/** 본문이 머리글 아래에서 시작하도록 비워 둘 높이. 위 여백 15mm 를 뺀 값이다 */
+const HEAD_SPACE_MM = Math.round(((A4_H - HEAD_BOX.bottom) / 72) * 25.4 - 15 + 4);
+
 let content = await render(PAGE);
 
 /**
- * 머리글을 옛 이력서의 띠 모양 그대로 만든다.
+ * 머리글은 **옛 이력서 PDF 에서 그대로 떼어 온다.**
  *
- * 원본은 회색 띠 안에 **이름 / 직함 / Birthday / Contact** 네 줄이 왼쪽에,
- * 증명사진이 오른쪽 끝에 붙어 있다. 표가 아니다.
+ * 이름 / 직함 / Birthday / Contact / 증명사진이 들어간 그 머리글을 CSS 로 두
+ * 번 흉내 냈지만 두 번 다 "비슷하지만 다른" 것이 나왔다. 글꼴(HY헤드라인M)이
+ * 이 PC 에 없고, 색도 Word COM 이 BGR 로 돌려줘 한 번 틀렸다.
  *
- * Notion 에는 인적사항이 표로 들어 있으므로 여기서 그 표를 읽어
- * 생년월일·연락처만 띠로 올리고, 남은 행(지원 포지션·주소·학력 …)은
- * 띠 아래 표로 내린다. 같은 내용이 두 번 나오지 않는다.
+ * 그래서 여기서는 **자리만 비워 두고**, PDF 를 만든 뒤 원본 1쪽의 그 영역을
+ * 벡터째 얹는다(아래 overlayHeader). 글자가 그림이 되지 않아 선택·검색이
+ * 그대로 되고, 어긋날 자리가 없다.
+ *
+ * Notion 에는 인적사항이 표로 들어 있으므로, 머리글로 올라간 세 줄
+ * (이름·생년월일·연락처)은 표에서 빼고 나머지만 아래 표로 남긴다.
+ * 같은 내용이 두 번 나오지 않는다.
  *
  * Notion 블록은 건드리지 않는다 — 화면에서는 지금 2단 모양이 보기 좋다.
  */
@@ -213,31 +241,12 @@ const HEAD = /<div class="cols"><div class="col"[^>]*>([\s\S]*?)<\/div><div clas
   const rows = m ? [...m[1].matchAll(/<tr><td>([\s\S]*?)<\/td><td>([\s\S]*?)<\/td><\/tr>/g)] : [];
 
   if (m && img && rows.length && /<h1>/.test(head)) {
-    /** 페이지마다 라벨이 조금씩 다르다 — ONE 은 '생년월일', 위존은 '출생년도' */
-    const pick = (...keys) =>
-      keys.map((k) => rows.find((r) => r[1].replace(/\s/g, '') === k)?.[2].trim()).find(Boolean) ?? '';
-    /** 연락처 한 칸에 메일과 전화가 '/' 로 붙어 있다. 원본은 메일이 앞이다 */
-    const parts = pick('연락처').split('/').map((t) => t.trim()).filter(Boolean);
-    const mail = parts.find((t) => t.includes('@')) ?? '';
-    const tel = parts.find((t) => !t.includes('@')) ?? '';
-    const contact = [mail && `<a href="mailto:${esc(mail)}">${mail}</a>`, tel].filter(Boolean).join(' / ');
-
-    const lines = [
-      pick('생년월일', '출생년도') &&
-        `<div class="line"><b>Birthday</b> : ${pick('생년월일', '출생년도').replace(/\.\s+/g, '.')}</div>`,
-      contact && `<div class="line"><b>Contact</b> : ${contact}</div>`,
-    ].filter(Boolean);
-
-    /** 띠로 올라간 세 줄은 아래 표에서 뺀다 */
+    /** 머리글로 올라간 줄은 아래 표에서 뺀다 — 이름·생년월일·연락처 */
     const MOVED = ['성명', '이름', '생년월일', '출생년도', '연락처'];
     const rest = rows.filter((r) => !MOVED.includes(r[1].replace(/\s/g, '')));
     const table = rest.length ? `<table>${rest.map((r) => r[0]).join('')}</table>` : '';
 
-    content =
-      `<div class="band"><div class="txt">` +
-      head.replace(/<h2>[^<]*<\/h2>\s*/g, '').replace(/<hr\s*\/?>/g, '') +
-      `${lines.join('')}</div>${img}</div>${table}` +
-      content.slice(m.index + m[0].length);
+    content = `<div class="head-space"></div>${table}` + content.slice(m.index + m[0].length);
   }
 }
 
@@ -316,22 +325,10 @@ const html = `<!doctype html>
   .cols .photo { float: none; margin: 0; }
 
   /*
-   * 머리글 띠 — 옛 이력서의 얼굴이다.
-   *
-   * 좌우만 여백 밖으로 번지게 한다. 위로도 당기면(-15mm) 내용이 페이지
-   * 영역 밖으로 밀려 인쇄에서 잘린다 — 화면 미리보기에서만 멀쩡해 보인다.
+   * 머리글 자리. 여기는 비워 두고, PDF 를 만든 뒤 옛 이력서 1쪽의 머리글을
+   * 벡터째 얹는다. 높이는 HEAD_BOX 에서 계산해 넣는다.
    */
-  .band {
-    display: flex; align-items: center; gap: 10pt;
-    background: #F2F2F2; break-inside: avoid;
-    margin: 0 -16mm 11pt; padding: 7mm 16mm;
-  }
-  .band .txt { flex: 1; min-width: 0; }
-  .band h1 { margin: 0 0 3pt; }
-  .band h1 + p { margin: 0 0 9pt; }
-  .band .line { font-size: 9.5pt; line-height: 1.75; margin: 0; padding-left: 2pt; color: #141515; }
-  .band .line b { font-weight: 700; }
-  .band .photo { flex: 0 0 auto; width: 33mm; max-width: 33mm; align-self: center; }
+  .head-space { height: ${HEAD_SPACE_MM}mm; }
 
 </style>
 ${content}
@@ -354,6 +351,7 @@ if (!edge) {
   process.exit(0);
 }
 
+const before = existsSync(pdfPath) ? statSync(pdfPath).mtimeMs : 0;
 execFileSync(edge, [
   '--headless=new',
   '--disable-gpu',
@@ -363,4 +361,80 @@ execFileSync(edge, [
   `file:///${htmlPath.replace(/\\/g, '/')}`,
 ], { stdio: 'ignore' });
 
+/**
+ * ⚠️ `execFileSync` 가 돌아왔다고 PDF 가 다 쓰인 것이 아니다.
+ *
+ * Edge 는 실제 작업을 자식 프로세스에 넘기고 먼저 끝난다. 그래서 바로 뒤에서
+ * 파일을 읽어 고쳐 쓰면, **그 뒤에 Edge 가 원래 파일로 덮어쓴다** — 머리글을
+ * 얹어 저장했는데 결과물에는 없는 일이 벌어진다. 한참 헤맸다.
+ *
+ * 크기가 더 이상 변하지 않을 때까지 기다린다.
+ */
+async function waitForPdf(file, since) {
+  const deadline = Date.now() + 60_000;
+  let last = -1;
+  let stable = 0;
+  while (Date.now() < deadline) {
+    const st = existsSync(file) ? statSync(file) : null;
+    if (st && st.mtimeMs > since && st.size > 0) {
+      stable = st.size === last ? stable + 1 : 0;
+      last = st.size;
+      if (stable >= 3) return true;
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return false;
+}
+if (!(await waitForPdf(pdfPath, before))) {
+  console.log(`⚠ Edge 가 PDF 를 다 쓰지 못했습니다: ${pdfPath}`);
+  process.exit(1);
+}
+
+/**
+ * 옛 이력서 1쪽의 머리글을 **벡터째** 1쪽 위에 얹는다.
+ *
+ * `embedPage` 는 그 영역을 Form XObject 로 들여온다 — 글자가 그림이 되지
+ * 않으므로 선택·검색이 그대로 되고, 글꼴이 없어도 원본이 품고 있는 것을
+ * 쓴다. 래스터로 뜨면 인쇄에서 가장자리가 뭉개진다.
+ */
+const ORIGIN = path.join(
+  process.env.USERPROFILE ?? '.',
+  'Downloads', 'newenw', '장민_이력서_경력기술서_자기소개서.pdf',
+);
+if (!existsSync(ORIGIN)) {
+  console.log(`⚠ 옛 이력서 PDF 가 없어 머리글을 얹지 못했습니다: ${ORIGIN}`);
+  console.log(`✓ ${pdfPath} (머리글 자리 비어 있음)`);
+  process.exit(0);
+}
+
+const { PDFDocument } = await import('pdf-lib');
+const body = await PDFDocument.load(readFileSync(pdfPath));
+const src = await PDFDocument.load(readFileSync(ORIGIN));
+
+/**
+ * Edge 가 만든 쪽에 **덧그리면 안 된다.** 그 쪽의 그래픽 상태(변환·클립)가
+ * 남아 있어 나중에 그린 것이 묻힌다 — 자원에는 들어가는데 화면에는 안 나와서
+ * 한참 헤맸다. 그래서 빈 문서를 새로 만들고 본문 쪽과 머리글을 **둘 다
+ * 얹는다.** 각자 제 좌표계를 들고 오므로 서로 간섭하지 않는다.
+ */
+const out = await PDFDocument.create();
+const bodyPages = await out.embedPages(body.getPages());
+/** 네모를 함께 넘기면 그 영역만 잘라서 들여온다 */
+const stamp = await out.embedPage(src.getPage(0), HEAD_BOX);
+
+bodyPages.forEach((bp, i) => {
+  const page = out.addPage([A4_W, A4_H]);
+  page.drawPage(bp, { x: 0, y: 0, width: A4_W, height: A4_H });
+  if (i === 0) {
+    page.drawPage(stamp, {
+      x: HEAD_BOX.left,
+      y: HEAD_BOX.bottom,
+      width: HEAD_BOX.right - HEAD_BOX.left,
+      height: HEAD_BOX.top - HEAD_BOX.bottom,
+    });
+  }
+});
+writeFileSync(pdfPath, await out.save());
+
 console.log(`✓ ${pdfPath}`);
+console.log(`  머리글은 옛 이력서 PDF 1쪽에서 그대로 가져왔습니다 (벡터)`);
