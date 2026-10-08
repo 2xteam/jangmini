@@ -122,6 +122,10 @@ const table = (rows, header = true) => ({
 const C = P.companies;
 
 const blocks = [
+  /* ── 이름과 직함 ── 옛 이력서 서식(26pt/18pt 골드)이 여기에 걸린다 */
+  h1('장 민'),
+  p_('Full Stack Developer'),
+
   /* ── 인적사항 (첫 장 최상단) ── */
   h2('인 적 사 항'),
   /**
@@ -149,7 +153,7 @@ const blocks = [
   divider(),
 
   /* ── 1. 핵심역량 (첫 페이지 최상단) ── */
-  h1('핵심역량 및 보유기술'),
+  h2('핵심역량 및 보유기술'),
   p_('채용 공고의 담당업무·자격요건 순서로 정리했습니다.'),
 
   h3('1. Next.js · TypeScript 기반 레거시 전환과 아키텍처 설계'),

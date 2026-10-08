@@ -204,41 +204,64 @@ const html = `<!doctype html>
 <meta charset="utf-8">
 <title>${esc(title)}</title>
 <style>
-  @page { size: A4; margin: 14mm 15mm; }
+  /*
+   * 2026년 이전 이력서(장민_이력서_경력기술서_자기소개서.docx)의 서식을 옮겼다.
+   * 그 문서에서 뽑은 값 —
+   *   이름 26pt / 직함 18pt, 색 #826015 (골드)   본문 10pt 맑은 고딕 #151514
+   *   절 제목 11pt 굵게, 아래 여백 6pt          표 머리글 음영 #D9D9D9
+   *
+   * HY헤드라인M 은 이 PC 에 없다. 같은 무게의 HYGothic-Extra 로 대체하고,
+   * 없으면 맑은 고딕 굵게로 떨어진다.
+   */
+  @page { size: A4; margin: 15mm 16mm; }
   * { box-sizing: border-box; }
   body {
-    font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
-    font-size: 10.5pt; line-height: 1.55; color: #16181d; margin: 0;
+    font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+    font-size: 10pt; line-height: 1.6; color: #151514; margin: 0;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  h1 { font-size: 16pt; margin: 0 0 6pt; letter-spacing: -.02em; break-after: avoid; }
-  h2 { font-size: 12.5pt; margin: 16pt 0 5pt; padding-bottom: 3pt;
-       border-bottom: 1.2pt solid #16181d; letter-spacing: -.02em; break-after: avoid; }
-  h3 { font-size: 11pt; margin: 11pt 0 3pt; color: #1f3a66; break-after: avoid; }
-  p { margin: 3pt 0; }
-  ul { margin: 3pt 0 6pt; padding-left: 15pt; }
-  li { margin: 1.5pt 0; break-inside: avoid; }
-  hr { border: 0; border-top: .6pt solid #d6d9e0; margin: 11pt 0 0; }
-  a { color: #1f3a66; text-decoration: none; }
-  code { background: #f1f2f5; padding: 0 2pt; border-radius: 2pt; font-size: 9.5pt; }
-  blockquote { margin: 6pt 0; padding-left: 8pt; border-left: 2pt solid #c8ccd4; color: #555b66; }
-  .callout {
-    background: #f4f6fa; border: .6pt solid #d6dbe6; border-radius: 3pt;
-    padding: 6pt 8pt; margin: 6pt 0; font-size: 9.8pt; break-inside: avoid;
+
+  /* 이름과 직함 — 문서의 얼굴 */
+  h1 {
+    font-family: "HYGothic-Extra", "HYGothic-Medium", "Malgun Gothic", sans-serif;
+    font-size: 26pt; font-weight: 700; color: #826015;
+    margin: 0 0 2pt; letter-spacing: -.01em; break-after: avoid;
   }
-  table { width: 100%; border-collapse: collapse; margin: 5pt 0 8pt; font-size: 9.6pt; }
-  th, td { border: .6pt solid #ccd1da; padding: 3.5pt 5pt; text-align: left; vertical-align: top; }
-  th { background: #eef1f6; font-weight: 700; }
+  h1 + p {
+    font-family: "HYGothic-Extra", "HYGothic-Medium", "Malgun Gothic", sans-serif;
+    font-size: 18pt; color: #826015; margin: 0 0 8pt; break-after: avoid;
+  }
+
+  h2 {
+    font-size: 11pt; font-weight: 700; color: #151514;
+    margin: 14pt 0 6pt; break-after: avoid; clear: both;
+  }
+  h3 { font-size: 10.5pt; font-weight: 700; color: #4a4330; margin: 10pt 0 3pt; break-after: avoid; }
+  p { margin: 2.5pt 0; }
+  ul { margin: 2.5pt 0 5pt; padding-left: 14pt; }
+  li { margin: 1pt 0; break-inside: avoid; }
+  a { color: #826015; text-decoration: none; }
+  code { background: #f2f1ec; padding: 0 2pt; border-radius: 2pt; font-size: 9.5pt; }
+  blockquote { margin: 5pt 0; padding-left: 7pt; border-left: 2pt solid #cfc6ab; color: #5c5647; }
+
+  /* 절 구분선 — 원본은 빈 줄로 띄웠지만 인쇄에서는 가는 선이 읽기 쉽다 */
+  hr { border: 0; border-top: .5pt solid #ddd9cc; margin: 12pt 0 0; clear: both; }
+
+  .callout {
+    background: #faf8f2; border: .5pt solid #e3ddc9; border-radius: 2pt;
+    padding: 5pt 7pt; margin: 5pt 0; font-size: 9.5pt; break-inside: avoid;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 7pt; font-size: 9.5pt; }
+  th, td { border: .5pt solid #bfbfbf; padding: 3pt 5pt; text-align: left; vertical-align: top; }
+  th { background: #D9D9D9; font-weight: 700; }
   tr { break-inside: avoid; }
-  /* 첫 표(보유 기술)와 요건 표는 첫 열을 좁게 */
   table td:first-child, table th:first-child { width: 26%; }
-  .photo { width: 100%; max-width: 26mm; border: .6pt solid #d6dbe0; }
+
+  .photo { width: 100%; max-width: 25mm; border: .5pt solid #cfc6ab; }
   .cols { display: flex; gap: 8pt; align-items: flex-start; break-inside: avoid; }
   .cols .col { min-width: 0; }
-  /* 2단 안의 사진은 칼럼 폭에 맞춘다 */
   .cols .photo { float: none; margin: 0; }
-  /* 사진 옆으로 흐른 뒤 다음 절은 아래에서 시작 */
-  h1, h2, hr { clear: both; }
 </style>
 ${content}
 `;
