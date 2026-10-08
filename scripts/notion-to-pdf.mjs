@@ -59,6 +59,41 @@ function rt(arr) {
     .join('');
 }
 
+
+/**
+ * 사진을 인쇄 크기로 줄인다.
+ *
+ * 원본이 2MB 넘는 PNG 라 그대로 넣으면 PDF 가 3MB 가 된다. 26mm 로 찍힐
+ * 그림에 그만한 화소가 필요 없고, 메일 첨부로 보내는 문서다.
+ *
+ * Node 에 이미지 라이브러리가 없어 **.NET System.Drawing** 을 쓴다 —
+ * 윈도우에 기본으로 있고 의존성을 더하지 않는다. 한 번 줄이면 캐시한다.
+ */
+async function shrink(url) {
+  if (!/^https?:/.test(url)) return url;
+  const out = path.resolve('tmp-form', 'photo-print.jpg');
+  if (existsSync(out)) return `file:///${out.replace(/\\/g, '/')}`;
+  try {
+    const buf = Buffer.from(await (await fetch(url)).arrayBuffer());
+    const src = path.resolve('tmp-form', 'photo-src.bin');
+    writeFileSync(src, buf);
+    const ps = `Add-Type -AssemblyName System.Drawing
+$i = [System.Drawing.Image]::FromFile('${src}')
+$w = 420; $h = [int]($i.Height * $w / $i.Width)
+$b = New-Object System.Drawing.Bitmap $w, $h
+$g = [System.Drawing.Graphics]::FromImage($b)
+$g.InterpolationMode = 'HighQualityBicubic'
+$g.DrawImage($i, 0, 0, $w, $h)
+$b.Save('${out}', [System.Drawing.Imaging.ImageFormat]::Jpeg)
+$g.Dispose(); $b.Dispose(); $i.Dispose()`;
+    execFileSync('powershell', ['-NoProfile', '-Command', ps], { stdio: 'ignore' });
+    if (existsSync(out)) return `file:///${out.replace(/\\/g, '/')}`;
+  } catch {
+    /* 줄이기에 실패하면 원본 URL 을 그대로 쓴다 — 크기만 커질 뿐 결과는 나온다 */
+  }
+  return url;
+}
+
 async function render(blockId) {
   const { results = [] } = await api(`/blocks/${blockId}/children?page_size=100`);
   const out = [];
@@ -101,6 +136,16 @@ async function render(blockId) {
       case 'divider':
         out.push('<hr>');
         break;
+      case 'image': {
+        /**
+         * 증명사진. 오른쪽으로 띄워 인적사항 표가 그 옆으로 흐르게 한다.
+         * Notion 이 보관한 파일은 만료되는 서명 URL 이라 external 을 먼저 본다 —
+         * 만료된 URL 은 PDF 에서 빈칸으로 찍히고 알아채기 어렵다.
+         */
+        const url = body.type === 'external' ? body.external?.url : body.file?.url;
+        if (url) out.push(`<img class="photo" src="${esc(await shrink(url))}" alt="">`);
+        break;
+      }
       case 'table': {
         const { results: rows = [] } = await api(`/blocks/${b.id}/children?page_size=100`);
         const head = body.has_column_header;
@@ -173,6 +218,9 @@ const html = `<!doctype html>
   tr { break-inside: avoid; }
   /* 첫 표(보유 기술)와 요건 표는 첫 열을 좁게 */
   table td:first-child, table th:first-child { width: 26%; }
+  .photo { float: right; width: 26mm; margin: 0 0 6pt 10pt; border: .6pt solid #d6dbe0; }
+  /* 사진 옆으로 흐른 뒤 다음 절은 아래에서 시작 */
+  h1, h2, hr { clear: both; }
 </style>
 ${content}
 `;
