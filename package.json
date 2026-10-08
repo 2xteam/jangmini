@@ -28,7 +28,8 @@
     "pdf:one": "node scripts/notion-to-pdf.mjs 3f3dca6972b880259dc1c3f6e71665e8 장민_이력서_ONE",
     "notion:wezon": "node scripts/notion-write-wezon.mjs",
     "pdf:wezon": "node scripts/notion-to-pdf.mjs 3f3dca6972b88013bdfbd19099cf4165 장민_위존_제조AI서비스_터닝포인트HR",
-    "notion:tidy": "node scripts/notion-tidy-resume.mjs"
+    "notion:tidy": "node scripts/notion-tidy-resume.mjs",
+    "form:wezon": "node scripts/forms/wezon-data.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",
