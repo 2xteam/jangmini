@@ -191,7 +191,32 @@ const title =
     ?.title?.map((t) => t.plain_text)
     .join('') ?? '이력서';
 
-const content = await render(PAGE);
+let content = await render(PAGE);
+
+/**
+ * 머리글을 원본 이력서처럼 맞춘다.
+ *
+ * Notion 에서는 이름·직함이 맨 위에 있고 그 아래에 2단(인적사항 표 | 사진)이
+ * 온다. 그대로 그리면 사진이 **표 옆에만** 붙어 작게 눌린다 — 원본은 사진이
+ * 이름부터 인적사항까지 머리글 전체의 오른쪽에 세로로 길게 선다.
+ *
+ * Notion 블록 순서를 건드리지 않고 인쇄할 때만 이름·직함을 왼쪽 칸 안으로
+ * 끌어넣는다. Notion 쪽은 지금 모양이 보기 좋으므로 그대로 둔다.
+ */
+const HEAD_END = /<div class="cols"><div class="col"([^>]*)>/;
+{
+  const m = HEAD_END.exec(content);
+  /** 2단 앞에 있는 것이 머리글이다 — 이름·직함, 그리고 '인 적 사 항' 제목 */
+  let head = m ? content.slice(0, m.index) : '';
+  if (m && /<h1>/.test(head)) {
+    const attr = m[1];
+    /** 원본 이력서에는 인적사항 제목이 없다. 이름이 곧 그 칸의 이름표다 */
+    head = head.replace(/<h2>[^<]*<\/h2>\s*/g, '').replace(/<hr\s*\/?>/g, '');
+    content =
+      `<div class="cols header"><div class="col"${attr}>${head}` +
+      content.slice(m.index + m[0].length);
+  }
+}
 
 /**
  * 인쇄 조판.
@@ -207,7 +232,11 @@ const html = `<!doctype html>
   /*
    * 2026년 이전 이력서(장민_이력서_경력기술서_자기소개서.docx)의 서식을 옮겼다.
    * 그 문서에서 뽑은 값 —
-   *   이름 26pt / 직함 18pt, 색 #826015 (골드)   본문 10pt 맑은 고딕 #151514
+   *   이름 26pt / 직함 18pt, 색 #156082 (진한 청록)  본문 10pt 맑은 고딕 #141515
+   *
+   * ⚠️ Word COM 의 Font.Color 는 **BGR** 순서다. 처음에 #826015(골드)로 읽고
+   *    그대로 썼는데 실제 색은 그 역순인 #156082 였다. 색은 .docx 의
+   *    word/document.xml 에서 w:color w:val 로 직접 확인하는 편이 안전하다.
    *   절 제목 11pt 굵게, 아래 여백 6pt          표 머리글 음영 #D9D9D9
    *
    * HY헤드라인M 은 이 PC 에 없다. 같은 무게의 HYGothic-Extra 로 대체하고,
@@ -217,35 +246,35 @@ const html = `<!doctype html>
   * { box-sizing: border-box; }
   body {
     font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
-    font-size: 10pt; line-height: 1.6; color: #151514; margin: 0;
+    font-size: 10pt; line-height: 1.6; color: #141515; margin: 0;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
 
   /* 이름과 직함 — 문서의 얼굴 */
   h1 {
     font-family: "HYGothic-Extra", "HYGothic-Medium", "Malgun Gothic", sans-serif;
-    font-size: 26pt; font-weight: 700; color: #826015;
+    font-size: 26pt; font-weight: 700; color: #156082;
     margin: 0 0 2pt; letter-spacing: -.01em; break-after: avoid;
   }
   h1 + p {
     font-family: "HYGothic-Extra", "HYGothic-Medium", "Malgun Gothic", sans-serif;
-    font-size: 18pt; color: #826015; margin: 0 0 8pt; break-after: avoid;
+    font-size: 18pt; color: #156082; margin: 0 0 8pt; break-after: avoid;
   }
 
   h2 {
-    font-size: 11pt; font-weight: 700; color: #151514;
+    font-size: 11pt; font-weight: 700; color: #141515;
     margin: 14pt 0 6pt; break-after: avoid; clear: both;
   }
   h3 { font-size: 10.5pt; font-weight: 700; color: #4a4330; margin: 10pt 0 3pt; break-after: avoid; }
   p { margin: 2.5pt 0; }
   ul { margin: 2.5pt 0 5pt; padding-left: 14pt; }
   li { margin: 1pt 0; break-inside: avoid; }
-  a { color: #826015; text-decoration: none; }
+  a { color: #156082; text-decoration: none; }
   code { background: #f2f1ec; padding: 0 2pt; border-radius: 2pt; font-size: 9.5pt; }
   blockquote { margin: 5pt 0; padding-left: 7pt; border-left: 2pt solid #cfc6ab; color: #5c5647; }
 
   /* 절 구분선 — 원본은 빈 줄로 띄웠지만 인쇄에서는 가는 선이 읽기 쉽다 */
-  hr { border: 0; border-top: .5pt solid #ddd9cc; margin: 12pt 0 0; clear: both; }
+  hr { border: 0; border-top: .5pt solid #d9d9d9; margin: 11pt 0 0; clear: both; }
 
   .callout {
     background: #faf8f2; border: .5pt solid #e3ddc9; border-radius: 2pt;
@@ -258,10 +287,15 @@ const html = `<!doctype html>
   tr { break-inside: avoid; }
   table td:first-child, table th:first-child { width: 26%; }
 
-  .photo { width: 100%; max-width: 25mm; border: .5pt solid #cfc6ab; }
-  .cols { display: flex; gap: 8pt; align-items: flex-start; break-inside: avoid; }
+  .photo { width: 100%; max-width: 30mm; }
+  .cols { display: flex; gap: 10pt; align-items: flex-start; break-inside: avoid; }
   .cols .col { min-width: 0; }
   .cols .photo { float: none; margin: 0; }
+
+  /* 머리글 2단 — 사진이 이름 높이부터 서도록 위를 맞춘다 */
+  .cols.header { align-items: stretch; gap: 12pt; margin-bottom: 2pt; }
+  .cols.header .photo { max-width: 32mm; }
+  .cols.header h1 { margin-top: -2pt; }
 </style>
 ${content}
 `;
