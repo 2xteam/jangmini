@@ -174,14 +174,6 @@ const blocks = [
     ['협업', 'Jira, Confluence, Notion, Teams'],
   ]),
 
-  callout(
-    '**아직 경험하지 않은 요건을 분명히 적습니다.** PostgreSQL · BigQuery · Kafka · ELK Stack · GCP 는 ' +
-      '실무 경험이 없습니다. 다만 MS-SQL 로 SP 최적화와 데이터 마이그레이션을, MongoDB 로 운영 DB 를 ' +
-      '다뤄 왔고, AWS EC2 와 Cloudflare 로 개인 서비스를 배포·운영하고 있습니다. Nest.js 는 개인 ' +
-      '프로젝트에서 API 서버를 구축해 구조를 익혔습니다. 면접에서 확인하실 수 있도록 미리 적어 둡니다.',
-    '⚠️',
-  ),
-
   divider(),
 
   /* ── 요건 대비 ── */
@@ -192,15 +184,15 @@ const blocks = [
     ['TypeScript, Next.js', '2023년부터 주력. 레거시 전환·Admin·AI Agent 전부 Next.js·TypeScript'],
     ['Nest.js', '개인 프로젝트에서 Nest.js + GraphQL + MongoDB 로 API 서버 구축 (2025)'],
     ['MongoDB', '설로인·트랙스로지스 운영 DB, 개인 서비스 다수'],
-    ['PostgreSQL / BigQuery', '미경험. MS-SQL 로 SP 최적화·쿼리 튜닝·대용량 마이그레이션 수행'],
+    ['PostgreSQL / BigQuery', 'MS-SQL 로 SP 최적화·쿼리 튜닝·대용량 마이그레이션 수행 (PostgreSQL·BigQuery 는 미경험)'],
     ['GCP 또는 AWS', 'AWS EC2 · Cloudflare R2 · Vercel 로 개인 서비스 배포·운영'],
     ['GitHub(GitFlow) · CI/CD', 'Jenkins·GitHub Actions 파이프라인 구축, 태그 기반 배포·원복(원복 시간 50% 단축)'],
     ['코드 품질 · 코드 리뷰', '공통 모듈 5종으로 팀 간 UI·코드 표준화, FE 팀 개발 환경 통합, 팀장 2년 11개월'],
     ['애자일 · 커뮤니케이션', '기획자 부재 상황에서 요구사항 직접 수집·조율(WMS 구축), 타 팀 협의 주도'],
     ['비즈니스 영어', 'TESOL 취득, 호주 1년 체류. 문서·메일 기반 협업 가능, 회화는 업무 적응 기간 필요'],
     ['[우대] EDI/API 모니터링', 'SignalR 실시간 모니터링 대시보드 2건, RESTful Dynamic Proxy API 구축'],
-    ['[우대] Kafka · ELK', '미경험. 실시간 이벤트 수집·중계는 SignalR 기반 모니터링 시스템 2건으로 구현한 경험이 있습니다'],
-    ['[우대] 해운업 도메인', '미경험. 이커머스 12년 + 물류(OMS·WMS·배송비·운송) 2년'],
+    ['[우대] Kafka · ELK', 'SignalR 기반 실시간 이벤트 수집·중계 모니터링 시스템 2건 구축 (Kafka·ELK 는 미경험)'],
+    ['[우대] 해운업 도메인', '이커머스 12년 + 물류(OMS·WMS·배송비·운송) 2년 (해운업은 미경험)'],
   ]),
 
   divider(),
@@ -325,8 +317,6 @@ const blocks = [
       '주고받는 일은 바로 가능하며, 회화는 업무 적응 기간에 빠르게 끌어올리겠습니다.',
   ),
 
-  divider(),
-  quote('포트폴리오 — jangmini.myjane.co.kr · 프로젝트 상세와 각 작업의 회고를 함께 두었습니다.'),
 ];
 
 /* ── 실행 ── */
