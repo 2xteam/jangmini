@@ -23,19 +23,28 @@
   "companies": {
     "트랙스로지스": {
       "rank": null,
-      "note": null
+      "note": null,
+      "reason": null
     },
     "설로인": {
       "rank": null,
-      "note": null
+      "note": null,
+      "reason": null
     },
     "큐텐테크놀로지": {
       "rank": null,
-      "note": null
+      "note": null,
+      "reason": null
     },
     "엑스오비스": {
       "rank": null,
-      "note": null
+      "note": null,
+      "reason": null
+    },
+    "허리업코리아": {
+      "rank": null,
+      "note": null,
+      "reason": null
     }
   }
 }
