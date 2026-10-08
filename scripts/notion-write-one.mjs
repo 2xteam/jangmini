@@ -119,11 +119,6 @@ const table = (rows) => ({
 const C = P.companies;
 
 const blocks = [
-  callout(
-    '**ONE Tech Stop Pte. Ltd. — Web Application 개발 및 운영 (EDI/API Monitoring System)** 지원\n' +
-      '장민 · 풀스택 개발 경력 14년 8개월 · ' + P.phone + ' · 2xteam@naver.com\n' +
-      '포트폴리오 jangmini.myjane.co.kr',
-    '📄',
   ),
 
   /* ── 1. 핵심역량 (첫 페이지 최상단) ── */
