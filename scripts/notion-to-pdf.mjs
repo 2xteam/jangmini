@@ -194,26 +194,49 @@ const title =
 let content = await render(PAGE);
 
 /**
- * 머리글을 원본 이력서처럼 맞춘다.
+ * 머리글을 옛 이력서의 띠 모양 그대로 만든다.
  *
- * Notion 에서는 이름·직함이 맨 위에 있고 그 아래에 2단(인적사항 표 | 사진)이
- * 온다. 그대로 그리면 사진이 **표 옆에만** 붙어 작게 눌린다 — 원본은 사진이
- * 이름부터 인적사항까지 머리글 전체의 오른쪽에 세로로 길게 선다.
+ * 원본은 회색 띠 안에 **이름 / 직함 / Birthday / Contact** 네 줄이 왼쪽에,
+ * 증명사진이 오른쪽 끝에 붙어 있다. 표가 아니다.
  *
- * Notion 블록 순서를 건드리지 않고 인쇄할 때만 이름·직함을 왼쪽 칸 안으로
- * 끌어넣는다. Notion 쪽은 지금 모양이 보기 좋으므로 그대로 둔다.
+ * Notion 에는 인적사항이 표로 들어 있으므로 여기서 그 표를 읽어
+ * 생년월일·연락처만 띠로 올리고, 남은 행(지원 포지션·주소·학력 …)은
+ * 띠 아래 표로 내린다. 같은 내용이 두 번 나오지 않는다.
+ *
+ * Notion 블록은 건드리지 않는다 — 화면에서는 지금 2단 모양이 보기 좋다.
  */
-const HEAD_END = /<div class="cols"><div class="col"([^>]*)>/;
+const HEAD = /<div class="cols"><div class="col"[^>]*>([\s\S]*?)<\/div><div class="col"[^>]*>([\s\S]*?)<\/div><\/div>/;
 {
-  const m = HEAD_END.exec(content);
-  /** 2단 앞에 있는 것이 머리글이다 — 이름·직함, 그리고 '인 적 사 항' 제목 */
-  let head = m ? content.slice(0, m.index) : '';
-  if (m && /<h1>/.test(head)) {
-    const attr = m[1];
-    /** 원본 이력서에는 인적사항 제목이 없다. 이름이 곧 그 칸의 이름표다 */
-    head = head.replace(/<h2>[^<]*<\/h2>\s*/g, '').replace(/<hr\s*\/?>/g, '');
+  const m = HEAD.exec(content);
+  const head = m ? content.slice(0, m.index) : '';
+  const img = m ? /<img[^>]*>/.exec(m[2])?.[0] : null;
+  const rows = m ? [...m[1].matchAll(/<tr><td>([\s\S]*?)<\/td><td>([\s\S]*?)<\/td><\/tr>/g)] : [];
+
+  if (m && img && rows.length && /<h1>/.test(head)) {
+    /** 페이지마다 라벨이 조금씩 다르다 — ONE 은 '생년월일', 위존은 '출생년도' */
+    const pick = (...keys) =>
+      keys.map((k) => rows.find((r) => r[1].replace(/\s/g, '') === k)?.[2].trim()).find(Boolean) ?? '';
+    /** 연락처 한 칸에 메일과 전화가 '/' 로 붙어 있다. 원본은 메일이 앞이다 */
+    const parts = pick('연락처').split('/').map((t) => t.trim()).filter(Boolean);
+    const mail = parts.find((t) => t.includes('@')) ?? '';
+    const tel = parts.find((t) => !t.includes('@')) ?? '';
+    const contact = [mail && `<a href="mailto:${esc(mail)}">${mail}</a>`, tel].filter(Boolean).join(' / ');
+
+    const lines = [
+      pick('생년월일', '출생년도') &&
+        `<div class="line"><b>Birthday</b> : ${pick('생년월일', '출생년도').replace(/\.\s+/g, '.')}</div>`,
+      contact && `<div class="line"><b>Contact</b> : ${contact}</div>`,
+    ].filter(Boolean);
+
+    /** 띠로 올라간 세 줄은 아래 표에서 뺀다 */
+    const MOVED = ['성명', '이름', '생년월일', '출생년도', '연락처'];
+    const rest = rows.filter((r) => !MOVED.includes(r[1].replace(/\s/g, '')));
+    const table = rest.length ? `<table>${rest.map((r) => r[0]).join('')}</table>` : '';
+
     content =
-      `<div class="cols header"><div class="col"${attr}>${head}` +
+      `<div class="band"><div class="txt">` +
+      head.replace(/<h2>[^<]*<\/h2>\s*/g, '').replace(/<hr\s*\/?>/g, '') +
+      `${lines.join('')}</div>${img}</div>${table}` +
       content.slice(m.index + m[0].length);
   }
 }
@@ -292,10 +315,24 @@ const html = `<!doctype html>
   .cols .col { min-width: 0; }
   .cols .photo { float: none; margin: 0; }
 
-  /* 머리글 2단 — 사진이 이름 높이부터 서도록 위를 맞춘다 */
-  .cols.header { align-items: stretch; gap: 12pt; margin-bottom: 2pt; }
-  .cols.header .photo { max-width: 32mm; }
-  .cols.header h1 { margin-top: -2pt; }
+  /*
+   * 머리글 띠 — 옛 이력서의 얼굴이다.
+   *
+   * 좌우만 여백 밖으로 번지게 한다. 위로도 당기면(-15mm) 내용이 페이지
+   * 영역 밖으로 밀려 인쇄에서 잘린다 — 화면 미리보기에서만 멀쩡해 보인다.
+   */
+  .band {
+    display: flex; align-items: center; gap: 10pt;
+    background: #F2F2F2; break-inside: avoid;
+    margin: 0 -16mm 11pt; padding: 7mm 16mm;
+  }
+  .band .txt { flex: 1; min-width: 0; }
+  .band h1 { margin: 0 0 3pt; }
+  .band h1 + p { margin: 0 0 9pt; }
+  .band .line { font-size: 9.5pt; line-height: 1.75; margin: 0; padding-left: 2pt; color: #141515; }
+  .band .line b { font-weight: 700; }
+  .band .photo { flex: 0 0 auto; width: 33mm; max-width: 33mm; align-self: center; }
+
 </style>
 ${content}
 `;
