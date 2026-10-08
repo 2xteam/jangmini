@@ -24,7 +24,8 @@
     "notion:counts": "node scripts/notion-fill-counts.mjs",
     "notion:drop99": "node scripts/notion-drop-99.mjs",
     "form:data": "node scripts/forms/build-data.mjs",
-    "notion:one": "node scripts/notion-write-one.mjs"
+    "notion:one": "node scripts/notion-write-one.mjs",
+    "pdf:one": "node scripts/notion-to-pdf.mjs 3f3dca6972b880259dc1c3f6e71665e8 장민_이력서_ONE"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.7",
