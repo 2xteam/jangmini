@@ -10,13 +10,14 @@
  * .docx 는 zip 이고 본문은 word/document.xml 하나에 들어 있다. 의존성을 더하지
  * 않으려고 zip 을 직접 읽는다 — 중앙 디렉터리에서 그 항목만 찾아 inflateRaw 한다.
  *
- * 파일 위치는 RESUME_DOCX 로 바꿀 수 있다. 기본값은 사용자가 알려준 경로다.
+ * 파일 위치는 RESUME_DOCX 로 바꿀 수 있다. 기본값은 이력서 폴더(scripts/files-dir.mjs).
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 import path from 'node:path';
+import { FILES_DIR, ORIGIN_DOCX } from './files-dir.mjs';
 
-const DEFAULT_DOCX = 'C:/Users/Tracxlogis/Downloads/newenw/장민_이력서_경력기술서_자기소개서.docx';
+const DEFAULT_DOCX = path.join(FILES_DIR, ORIGIN_DOCX);
 const OUT_DIR = 'tmp-ingest';
 
 function loadEnv() {

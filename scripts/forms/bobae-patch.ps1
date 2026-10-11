@@ -14,7 +14,7 @@
 
 . "$PSScriptRoot\lib.ps1"
 
-$target = "C:\Users\Tracxlogis\Downloads\표준이력서_장민_보배써치.docx"
+$target = Find-FormFile '표준이력서_장민_보배써치.docx'
 $backup = [IO.Path]::ChangeExtension($target, $null) + "bak.docx"
 
 if (-not (Test-Path $target)) { throw "파일이 없습니다: $target" }

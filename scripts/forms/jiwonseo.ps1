@@ -9,8 +9,8 @@
 
 . "$PSScriptRoot\lib.ps1"
 
-$src = "C:\Users\Tracxlogis\Downloads\지원서 양식 (1).doc"
-$dst = "C:\Users\Tracxlogis\Downloads\지원서_장민.doc"
+$src = Find-FormFile '지원서 양식 (1).doc'
+$dst = File-Path '지원서_장민.doc'
 
 $d = Read-FormData
 $f = Open-Form -Source $src -Dest $dst

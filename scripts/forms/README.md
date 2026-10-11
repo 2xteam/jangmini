@@ -4,12 +4,32 @@
 들어오므로 **데이터 한 벌 + 양식별 매핑**으로 나눠 둔다.
 
 ```
-build-data.mjs   DB → tmp-form/data.json   (양식과 무관한 이력 데이터 한 벌)
-lib.ps1          공통 함수 (사본 만들기 · 문단 바꾸기 · 【직접 입력】)
-dump.ps1         아무 양식이나 구조를 훑어본다
-jiwonseo.ps1     지원서 양식 (1).doc
-bobae.ps1        표준이력서_보배써치.docx
+build-data.mjs    DB → tmp-form/data.json   (양식과 무관한 이력 데이터 한 벌)
+wezon-data.mjs    Notion 위존 이력서 → tmp-form/wezon-form.json
+lib.ps1           공통 함수 (사본 만들기 · 문단 바꾸기 · 경로 · 덮어쓰기 가드)
+dump.ps1          아무 양식이나 구조를 훑어본다
+jiwonseo.ps1      지원서 양식 (1).doc
+bobae.ps1         표준이력서_보배써치.docx
+turningpoint.ps1  성함_회사명_포지션명_터닝포인트HR..docx
+header-image.ps1  옛 이력서 1쪽에서 머리글 범위를 재고 그림으로 잘라 낸다
+html-to-docx.ps1  이력서 HTML → .docx (머리글은 그림으로 얹는다)
+pdf-page-png.ps1  PDF 한 쪽을 PNG 로 — 눈으로 확인할 때
 ```
+
+## 파일은 한곳에 둔다
+
+양식 원본과 결과물은 모두 **`C:\Dev\jangmini-file`** 에 있다. 경로는 두 곳에
+한 번씩만 적혀 있다 — `scripts/files-dir.mjs` (Node) 와 `lib.ps1` 의
+`$script:FILES_DIR` (PowerShell). 다른 폴더를 쓰려면 환경변수 `RESUME_DIR`.
+
+예전에는 `~/Downloads` 와 `~/Downloads/newenw` 에 흩어져 있어서 스크립트마다
+경로를 박아 두었고, 폴더를 옮기니 여덟 군데를 고쳐야 했다. 아직 옛 자리에
+남은 양식이 있어 `Find-FormFile` 이 새 폴더를 먼저 보고 없으면 옛 자리로
+떨어진다 — 옛 자리에서 찾으면 그렇다고 알려 준다.
+
+> ⚠️ 이 폴더에는 **사람이 손으로 고친 파일**이 있다 (예: `장민_이력서_ONE.docx`).
+> 스크립트가 같은 이름으로 덮어쓰면 그 수정이 조용히 사라지므로,
+> `Assert-Overwritable` 이 막는다. 정말 덮어쓸 때만 `-Force` 를 붙인다.
 
 ## 쓰는 법
 
@@ -18,7 +38,28 @@ pnpm form:data                                      # 데이터를 새로 만든
 powershell -NoProfile -File scripts/forms/bobae.ps1 # 양식을 채운다
 ```
 
-결과는 `~/Downloads` 에 **새 파일**로 떨어진다. 원본 양식은 건드리지 않는다.
+결과는 이력서 폴더에 **새 파일**로 떨어진다. 원본 양식은 건드리지 않는다.
+
+## 이력서를 Word 로
+
+PDF 를 Word 로 역변환하지 않는다. **PDF 를 만든 그 HTML** 을 Word 로 연다.
+
+```bash
+node scripts/notion-to-pdf.mjs <페이지id> 장민_이력서_ONE_본문 --no-header
+powershell -NoProfile -File scripts/forms/header-image.ps1
+powershell -NoProfile -File scripts/forms/html-to-docx.ps1 -Source 장민_이력서_ONE_본문 -Name 장민_이력서_ONE
+```
+
+- `--no-header` 는 머리글 자리만 비워 둔다. 완성본 PDF 의 머리글은 옛 이력서에서
+  떠 온 **벡터**인데, 그대로 Word 에 넣으면 도형 수천 개로 풀어 놓느라 변환이
+  끝나지 않는다. 머리글은 그림 한 장으로 얹는다.
+- 본문은 **진짜 표와 진짜 글자**로 들어가 바로 고칠 수 있다. 대신 줄바꿈 위치가
+  PDF 와 미세하게 다를 수 있다.
+
+> ⚠️ **`SaveAs2` 를 쓰지 말 것.** 이 PC 의 Word 에서는 문단 하나짜리 빈 문서조차
+> 저장이 끝나지 않는다 (CPU 100% 로 몇 분). 구식 `SaveAs` 에 형식
+> 12(`wdFormatXMLDocument`)를 주면 같은 .docx 가 2초에 나온다. PowerShell 의 COM
+> 바인딩이 `SaveAs` 의 인자를 못 넘기므로 리플렉션으로 부른다.
 
 ## 새 양식이 오면
 

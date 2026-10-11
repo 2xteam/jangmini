@@ -16,8 +16,8 @@
 
 . "$PSScriptRoot\lib.ps1"
 
-$src  = "C:\Users\Tracxlogis\Downloads\성함_회사명_포지션명_터닝포인트HR..docx"
-$dst  = "C:\Users\Tracxlogis\Downloads\장민_위존_제조AI서비스개발_터닝포인트HR.docx"
+$src  = Find-FormFile '성함_회사명_포지션명_터닝포인트HR..docx'
+$dst  = File-Path '장민_위존_제조AI서비스개발_터닝포인트HR.docx'
 $json = "$PSScriptRoot\..\..\tmp-form\wezon-form.json"
 
 if (-not (Test-Path $json)) { throw "먼저 'node scripts/forms/wezon-data.mjs' 를 돌리세요." }

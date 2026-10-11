@@ -2,7 +2,7 @@
  * Notion 페이지를 인쇄용 HTML 로 뽑고 PDF 로 변환한다.
  *
  *   node scripts/notion-to-pdf.mjs <페이지id> "<출력파일 이름>"
- *   pnpm pdf:one          ONE 이력서를 ~/Downloads 에 PDF 로
+ *   pnpm pdf:one          ONE 이력서를 이력서 폴더에 PDF 로 (scripts/files-dir.mjs)
  *
  * ## 왜 직접 만드나
  *
@@ -16,6 +16,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
+import { FILES_DIR, ORIGIN_PDF } from './files-dir.mjs';
 
 for (const file of ['.env.local', '.env']) {
   try {
@@ -28,8 +29,18 @@ for (const file of ['.env.local', '.env']) {
   }
 }
 
-const PAGE = (process.argv[2] ?? '3f3dca69-72b8-8025-9dc1-c3f6e71665e8').replace(/-/g, '');
-const NAME = process.argv[3] ?? '장민_이력서_ONE';
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const PAGE = (args[0] ?? '3f3dca69-72b8-8025-9dc1-c3f6e71665e8').replace(/-/g, '');
+const NAME = args[1] ?? '장민_이력서_ONE';
+
+/**
+ * `--no-header` 는 머리글을 얹지 않고 자리만 비워 둔 채로 끝낸다.
+ *
+ * Word 로 바꿀 때 쓴다. 머리글은 벡터라서 Word 가 도형 수천 개로 풀어 놓느라
+ * 변환이 끝나지 않는다 (CPU 3분을 넘겨도 저장이 안 됐다). 본문만 바꾼 뒤
+ * 머리글은 그림 한 장으로 얹는 쪽이 빠르고 결과도 깔끔하다.
+ */
+const NO_HEADER = process.argv.includes('--no-header');
 
 const H = {
   Authorization: `Bearer ${process.env.NOTION_TOKEN}`,
@@ -338,7 +349,7 @@ mkdirSync('tmp-form', { recursive: true });
 const htmlPath = path.resolve('tmp-form', `${NAME}.html`);
 writeFileSync(htmlPath, html, 'utf8');
 
-const outDir = path.join(process.env.USERPROFILE ?? '.', 'Downloads');
+const outDir = FILES_DIR;
 const pdfPath = path.join(outDir, `${NAME}.pdf`);
 
 const edges = [
@@ -397,10 +408,12 @@ if (!(await waitForPdf(pdfPath, before))) {
  * 않으므로 선택·검색이 그대로 되고, 글꼴이 없어도 원본이 품고 있는 것을
  * 쓴다. 래스터로 뜨면 인쇄에서 가장자리가 뭉개진다.
  */
-const ORIGIN = path.join(
-  process.env.USERPROFILE ?? '.',
-  'Downloads', 'newenw', '장민_이력서_경력기술서_자기소개서.pdf',
-);
+const ORIGIN = path.join(FILES_DIR, ORIGIN_PDF);
+if (NO_HEADER) {
+  console.log(`✓ ${pdfPath}`);
+  console.log('  --no-header — 머리글 자리를 비워 두었습니다 (Word 변환용)');
+  process.exit(0);
+}
 if (!existsSync(ORIGIN)) {
   console.log(`⚠ 옛 이력서 PDF 가 없어 머리글을 얹지 못했습니다: ${ORIGIN}`);
   console.log(`✓ ${pdfPath} (머리글 자리 비어 있음)`);

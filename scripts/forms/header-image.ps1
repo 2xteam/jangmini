@@ -21,7 +21,8 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 if (-not $repo) { $repo = (Get-Location).Path }
 
-$src = 'C:\Users\Tracxlogis\Downloads\newenw\장민_이력서_경력기술서_자기소개서.pdf'
+. "$PSScriptRoot\lib.ps1"
+$src = File-Path '장민_이력서_경력기술서_자기소개서.pdf'
 $out = Join-Path $repo 'tmp-form\header.png'
 $full = Join-Path $repo 'tmp-form\page1.png'
 
