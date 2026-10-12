@@ -8,6 +8,7 @@
   },
   "gender": "남",
   "phone": null,
+  "email": null,
   "address": null,
   "military": {
     "text": "육군 병장 만기전역",

@@ -139,8 +139,10 @@ const data = {
     birthText: `${PERSONAL.birth.y}년 ${PERSONAL.birth.m}월 ${PERSONAL.birth.d}일`,
     birthDotted: `${PERSONAL.birth.y}. ${String(PERSONAL.birth.m).padStart(2, '0')}. ${String(PERSONAL.birth.d).padStart(2, '0')}`,
     militaryText: `${PERSONAL.military.text} (${PERSONAL.military.from.replace('.', '년 ')}월 ~ ${PERSONAL.military.to.replace('.', '년 ')}월)`,
+    /** ⚠️ 기본값을 여기 적지 않는다. 이 저장소는 공개다 — personal.json 에서 읽는다 */
     email: (profile?.links ?? []).find((l) => /mailto:/.test(l.url ?? ''))?.url?.replace('mailto:', '')
-      ?? '2xteam@naver.com',
+      ?? PERSONAL.email
+      ?? null,
   },
   career: { totalMonths, totalText: span(totalMonths) },
 

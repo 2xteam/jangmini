@@ -143,7 +143,7 @@ const blocks = [
       ['이름', `${P.name} (Jang Min)`],
       ['출생년도', P.birthText],
       ['주소', P.addressShort ?? '—'],
-      ['연락처', `${P.phone} / 2xteam@naver.com`],
+      ['연락처', `${P.phone} / ${P.email}`],
       ['병역사항', '군필 / 2006.03 ~ 2008.03 / 육군 병장 만기제대'],
     ],
     false,
